@@ -48,6 +48,29 @@ shared/
 **Fase 1a DONE** (all verified): JWT HS256 + rotating refresh (hashed at rest, V2 migration), role enforcement (@PreAuthorize + resource server), admin user management, /api/me; seeded admin `admin@controlleads.local`/`admin123` (override APP_SEED_ADMIN_*). Web: AuthService signals + interceptor + guards, login/dashboard/team pages. App: AuthService ChangeNotifier, login/home. 6/6 backend e2e tests green.
 Boot 4 gotchas learned: TestRestTemplate package moved (use MockMvc — `org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc`); no com.fasterxml ObjectMapper bean (Jackson 3 default) — instantiate locally in tests; AccessDeniedException must be handled explicitly in the advice or @PreAuthorize denials become 500; Hibernate validate rejects CHAR columns for String fields (use VARCHAR).
 
-**Next: Fase 1b — Catalogs + Leads & Pipeline** (SPEC-004..007 in `.spec/discovery/roadmap.md`, requirements in `module_settings.md` + `module_leads.md`): catalog CRUD (courses/channels/stall reasons), lead CRUD with owner+UTM, status transitions writing immutable events, STALLED flow, list/filters + Kanban on both clients. Then 1c (Activities).
+**Fase 1b** — backend DONE and green (13/13 tests: catalogs CRUD admin-gated; lead create/update/list-with-filters/detail; transition validation writing immutable events; STALLED with required reason + reactivate-to-origin; ownership visibility returns 404 not 403; duplicates warn endpoint). Web + app lead UIs written (list/filters, form with live duplicate warning, detail with unified timeline + transitions, Kanban CDK board with stall-reason prompt, catalogs admin page). More Boot gotchas: Spring Data repos must be TOP-LEVEL interfaces (nested ones are not scanned); Postgres CHAR columns break Hibernate validate (always VARCHAR).
+
+**Fases 1c + 1d backend DONE and green** (23/23 backend tests; new module packages `activities/` and `analytics/`). Activities: entity over the existing V1 `activities` table, ownership-gated CRUD + `/api/my/follow-ups`, contact kinds update `leads.last_contacted_at`. Analytics: `AnalyticsService` uses `NamedParameterJdbcTemplate`, ALL figures derive from `lead_status_events` (funnel = distinct leads that ever reached each stage; avgDaysToConvert dedupes to first STUDENT event; drop-off from STALLED events; scoped by owner for members, global+leaderboard for admin). OpenAPI regenerated (35 operations). One more Boot/JDBC gotcha: `NamedParameterJdbcTemplate.query(sql, params, lambda)` — an EXPRESSION lambda is ambiguous between RowCallbackHandler and ResultSetExtractor; use a BLOCK lambda `rs -> { ... }`. And in MockMvc tests, name helper methods so they don't shadow the static-imported `get`/`post` builders.
+
+The original contract (kept for reference; now implemented) lives in `web/src/app/core/api/activities.service.ts` and `analytics.service.ts`:
+
+- `GET /api/leads/{id}/activities` → `[{id, leadId, type(NOTE|CALL|EMAIL|WHATSAPP|MEETING|FOLLOW_UP), content, dueAt?, completedAt?, createdBy, createdByName, createdAt}]`
+- `POST /api/leads/{id}/activities` `{type, content, dueAt?}` — contact types (CALL/EMAIL/WHATSAPP/MEETING) update `leads.last_contacted_at`
+- `POST /api/activities/{id}/complete`
+- `GET /api/my/follow-ups` → open FOLLOW_UPs of caller + `leadName`, ordered by dueAt
+- `GET /api/analytics/summary?from&to` → `{totalLeads, newLeads, conversionRate(0..1), avgDaysToConvert|null, slaBreaches}`
+- `GET /api/analytics/funnel` → `[{status, count}]` (current distribution incl. STALLED)
+- `GET /api/analytics/drop-off` → `[{stage, reasonId, reasonName, count}]` from STALLED events
+- `GET /api/analytics/timeseries?interval=week|month` → `[{period, created, converted}]`
+- `GET /api/analytics/by-channel` and `/by-course` → `[{id, name, total, students}]`
+- `GET /api/analytics/by-country` → `[{countryCode, total, students}]`
+- `GET /api/analytics/leaderboard` (admin 403 otherwise) → `[{userId, name, totalLeads, students}]`
+- All analytics derive from `lead_status_events` (never current status), scoped to caller's leads for MARKETING_TEAM, global for admin.
+
+**Pending (user will run / next session)**: `web: npm install && npm run build && npm test -- --watch=false` (new dep: echarts ^6 — added to package.json, NOT installed yet) · `app: flutter analyze && flutter test` · fix fallout · commit · regenerate openapi.yaml. Web dashboard uses a hand-rolled ECharts wrapper (`web/src/app/shared/chart.ts`) — no ngx-echarts on purpose.
+
+**Still uncommitted / pending validation** (bash classifier was flaky across sessions; user validates web/app builds themselves): commit Fases 1b+1c+1d together; run `web: npm install && npm run build && npm test` (new dep echarts ^6) and `app: flutter analyze && flutter test`.
+
+Next feature: **Fase 1e — Notifications & SLA** (SPEC-013/014): scheduled job detecting HOT_LEAD past `hot_lead_max_hours` (uses `last_contacted_at`, already wired), follow-up-due reminders, in-app notification center (the `notifications` table already exists in V1), then FCM/APNs push + email digest. SLA-breach count is ALREADY exposed via `/api/analytics/summary.slaBreaches` — 1e adds the actual notifications.
 
 Open decisions (small, decide in specs): activity edit window; email digest vs immediate; lead auto-assignment for Fase 2 public capture.

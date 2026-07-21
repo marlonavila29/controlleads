@@ -39,6 +39,39 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/UserDto"
+  /api/stall-reasons:
+    get:
+      tags:
+      - catalogs
+      summary: List stall reasons
+      operationId: listStallReasons
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CatalogDto"
+    post:
+      tags:
+      - catalogs
+      summary: Create stall reason (admin)
+      operationId: createStallReason
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCatalogRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CatalogDto"
   /api/me/password:
     post:
       tags:
@@ -54,6 +87,243 @@ paths:
       responses:
         "200":
           description: OK
+  /api/leads:
+    get:
+      tags:
+      - leads
+      summary: Search/filter leads (marketing sees own; admins see all)
+      operationId: list_1
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - LEAD
+          - HOT_LEAD
+          - APPLICATION
+          - STUDENT
+          - STALLED
+      - name: countryCode
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: courseId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: channelId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: assignedTo
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: createdFrom
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: createdTo
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 25
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LeadPageDto"
+    post:
+      tags:
+      - leads
+      summary: Create a lead (owner defaults to the caller; admins may assign)
+      operationId: create_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLeadRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LeadDto"
+  /api/leads/{id}/transition:
+    post:
+      tags:
+      - leads
+      summary: Move a lead through the funnel; every accepted move writes an immutable
+        event
+      operationId: transition
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransitionRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LeadDto"
+  /api/leads/{id}/activities:
+    get:
+      tags:
+      - activities
+      summary: Activities of a lead (ownership enforced)
+      operationId: list_2
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityDto"
+    post:
+      tags:
+      - activities
+      summary: Log an activity; contact kinds reset the lead's SLA clock
+      operationId: add
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateActivityRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ActivityDto"
+  /api/courses:
+    get:
+      tags:
+      - catalogs
+      summary: List courses
+      operationId: listCourses
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CatalogDto"
+    post:
+      tags:
+      - catalogs
+      summary: Create course (admin)
+      operationId: createCourse
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCatalogRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CatalogDto"
+  /api/channels:
+    get:
+      tags:
+      - catalogs
+      summary: List channels
+      operationId: listChannels
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CatalogDto"
+    post:
+      tags:
+      - catalogs
+      summary: Create channel (admin)
+      operationId: createChannel
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCatalogRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CatalogDto"
   /api/auth/refresh:
     post:
       tags:
@@ -93,6 +363,26 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/AuthResponse"
+  /api/activities/{id}/complete:
+    post:
+      tags:
+      - activities
+      summary: Mark a follow-up as done
+      operationId: complete
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ActivityDto"
   /api/users/{id}:
     patch:
       tags:
@@ -120,6 +410,129 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/UserDto"
+  /api/stall-reasons/{id}:
+    patch:
+      tags:
+      - catalogs
+      summary: Rename or (de)activate stall reason (admin)
+      operationId: updateStallReason
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCatalogRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CatalogDto"
+  /api/leads/{id}:
+    get:
+      tags:
+      - leads
+      summary: Lead detail with full status history
+      operationId: detail
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LeadDetailDto"
+    patch:
+      tags:
+      - leads
+      summary: Update lead data; reassignment is admin-only and audited
+      operationId: update_1
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLeadRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LeadDto"
+  /api/courses/{id}:
+    patch:
+      tags:
+      - catalogs
+      summary: Rename or (de)activate course (admin)
+      operationId: updateCourse
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCatalogRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CatalogDto"
+  /api/channels/{id}:
+    patch:
+      tags:
+      - catalogs
+      summary: Rename or (de)activate channel (admin)
+      operationId: updateChannel
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCatalogRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CatalogDto"
   /api/ping:
     get:
       tags:
@@ -133,6 +546,21 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/PingResponse"
+  /api/my/follow-ups:
+    get:
+      tags:
+      - activities
+      summary: "My open follow-ups, ordered by due date"
+      operationId: myFollowUps
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FollowUpDto"
   /api/me:
     get:
       tags:
@@ -146,6 +574,182 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/UserDto"
+  /api/leads/duplicates:
+    get:
+      tags:
+      - leads
+      summary: "Possible duplicates by email/phone — warn, don't block (RN-04)"
+      operationId: duplicates
+      parameters:
+      - name: email
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: phone
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DuplicateDto"
+  /api/analytics/timeseries:
+    get:
+      tags:
+      - analytics
+      summary: Leads created vs converted over time
+      operationId: timeseries
+      parameters:
+      - name: interval
+        in: query
+        required: false
+        schema:
+          type: string
+          default: week
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TimePoint"
+  /api/analytics/summary:
+    get:
+      tags:
+      - analytics
+      summary: Headline KPIs
+      operationId: summary
+      parameters:
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Summary"
+  /api/analytics/leaderboard:
+    get:
+      tags:
+      - analytics
+      summary: Team leaderboard (admin only)
+      operationId: leaderboard
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardRow"
+  /api/analytics/funnel:
+    get:
+      tags:
+      - analytics
+      summary: Conversion funnel — distinct leads that ever reached each stage
+      operationId: funnel
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FunnelStage"
+  /api/analytics/drop-off:
+    get:
+      tags:
+      - analytics
+      summary: Drop-off — where and why leads stalled
+      operationId: dropOff
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DropOffRow"
+  /api/analytics/by-course:
+    get:
+      tags:
+      - analytics
+      summary: Volume and conversion by course
+      operationId: byCourse
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BreakdownRow"
+  /api/analytics/by-country:
+    get:
+      tags:
+      - analytics
+      summary: Volume and conversion by country of origin
+      operationId: byCountry
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CountryRow"
+  /api/analytics/by-channel:
+    get:
+      tags:
+      - analytics
+      summary: Volume and conversion by channel
+      operationId: byChannel
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BreakdownRow"
 components:
   schemas:
     CreateUserRequest:
@@ -192,6 +796,24 @@ components:
         createdAt:
           type: string
           format: date-time
+    CreateCatalogRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+      required:
+      - name
+    CatalogDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        active:
+          type: boolean
     ChangePasswordRequest:
       type: object
       properties:
@@ -205,6 +827,169 @@ components:
       required:
       - currentPassword
       - newPassword
+    CreateLeadRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+          minLength: 1
+        countryCode:
+          type: string
+          minLength: 1
+          pattern: "[A-Za-z]{2}"
+        email:
+          type: string
+        phone:
+          type: string
+        courseId:
+          type: string
+          format: uuid
+        channelId:
+          type: string
+          format: uuid
+        assignedTo:
+          type: string
+          format: uuid
+        utmSource:
+          type: string
+        utmMedium:
+          type: string
+        utmCampaign:
+          type: string
+      required:
+      - channelId
+      - countryCode
+      - courseId
+      - fullName
+    LeadDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        countryCode:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        courseId:
+          type: string
+          format: uuid
+        channelId:
+          type: string
+          format: uuid
+        utmSource:
+          type: string
+        utmMedium:
+          type: string
+        utmCampaign:
+          type: string
+        status:
+          type: string
+          enum:
+          - LEAD
+          - HOT_LEAD
+          - APPLICATION
+          - STUDENT
+          - STALLED
+        stalledFromStatus:
+          type: string
+          enum:
+          - LEAD
+          - HOT_LEAD
+          - APPLICATION
+          - STUDENT
+          - STALLED
+        stallReasonId:
+          type: string
+          format: uuid
+        assignedTo:
+          type: string
+          format: uuid
+        assignedToName:
+          type: string
+        lastContactedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    TransitionRequest:
+      type: object
+      properties:
+        toStatus:
+          type: string
+          enum:
+          - LEAD
+          - HOT_LEAD
+          - APPLICATION
+          - STUDENT
+          - STALLED
+        stallReasonId:
+          type: string
+          format: uuid
+        note:
+          type: string
+      required:
+      - toStatus
+    CreateActivityRequest:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+          - NOTE
+          - CALL
+          - EMAIL
+          - WHATSAPP
+          - MEETING
+          - FOLLOW_UP
+        content:
+          type: string
+          minLength: 1
+        dueAt:
+          type: string
+          format: date-time
+      required:
+      - content
+      - type
+    ActivityDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        leadId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+          - NOTE
+          - CALL
+          - EMAIL
+          - WHATSAPP
+          - MEETING
+          - FOLLOW_UP
+        content:
+          type: string
+        dueAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+          format: uuid
+        createdByName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
     RefreshRequest:
       type: object
       properties:
@@ -247,6 +1032,34 @@ components:
           - MARKETING_TEAM
         active:
           type: boolean
+    UpdateCatalogRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        active:
+          type: boolean
+    UpdateLeadRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+        countryCode:
+          type: string
+          pattern: "[A-Za-z]{2}"
+        email:
+          type: string
+        phone:
+          type: string
+        courseId:
+          type: string
+          format: uuid
+        channelId:
+          type: string
+          format: uuid
+        assignedTo:
+          type: string
+          format: uuid
     PingResponse:
       type: object
       properties:
@@ -257,3 +1070,206 @@ components:
         serverTime:
           type: string
           format: date-time
+    FollowUpDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        leadId:
+          type: string
+          format: uuid
+        leadName:
+          type: string
+        type:
+          type: string
+          enum:
+          - NOTE
+          - CALL
+          - EMAIL
+          - WHATSAPP
+          - MEETING
+          - FOLLOW_UP
+        content:
+          type: string
+        dueAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+          format: uuid
+        createdByName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    LeadPageDto:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/LeadDto"
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+    LeadDetailDto:
+      type: object
+      properties:
+        lead:
+          $ref: "#/components/schemas/LeadDto"
+        statusHistory:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatusEventDto"
+    StatusEventDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fromStatus:
+          type: string
+          enum:
+          - LEAD
+          - HOT_LEAD
+          - APPLICATION
+          - STUDENT
+          - STALLED
+        toStatus:
+          type: string
+          enum:
+          - LEAD
+          - HOT_LEAD
+          - APPLICATION
+          - STUDENT
+          - STALLED
+        stallReasonId:
+          type: string
+          format: uuid
+        note:
+          type: string
+        changedBy:
+          type: string
+          format: uuid
+        changedByName:
+          type: string
+        changedAt:
+          type: string
+          format: date-time
+    DuplicateDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        status:
+          type: string
+          enum:
+          - LEAD
+          - HOT_LEAD
+          - APPLICATION
+          - STUDENT
+          - STALLED
+        assignedToName:
+          type: string
+    TimePoint:
+      type: object
+      properties:
+        period:
+          type: string
+        created:
+          type: integer
+          format: int64
+        converted:
+          type: integer
+          format: int64
+    Summary:
+      type: object
+      properties:
+        totalLeads:
+          type: integer
+          format: int64
+        newLeads:
+          type: integer
+          format: int64
+        conversionRate:
+          type: number
+          format: double
+        avgDaysToConvert:
+          type: number
+          format: double
+        slaBreaches:
+          type: integer
+          format: int64
+    LeaderboardRow:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        totalLeads:
+          type: integer
+          format: int64
+        students:
+          type: integer
+          format: int64
+    FunnelStage:
+      type: object
+      properties:
+        status:
+          type: string
+        count:
+          type: integer
+          format: int64
+    DropOffRow:
+      type: object
+      properties:
+        stage:
+          type: string
+        reasonId:
+          type: string
+          format: uuid
+        reasonName:
+          type: string
+        count:
+          type: integer
+          format: int64
+    BreakdownRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        total:
+          type: integer
+          format: int64
+        students:
+          type: integer
+          format: int64
+    CountryRow:
+      type: object
+      properties:
+        countryCode:
+          type: string
+        total:
+          type: integer
+          format: int64
+        students:
+          type: integer
+          format: int64

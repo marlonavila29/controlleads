@@ -62,7 +62,7 @@ CREATE TABLE stall_reasons (
 CREATE TABLE leads (
     id                  UUID PRIMARY KEY,
     full_name           VARCHAR(160) NOT NULL,
-    country_code        CHAR(2)      NOT NULL,             -- ISO 3166-1 alpha-2
+    country_code        VARCHAR(2)   NOT NULL,             -- ISO 3166-1 alpha-2
     email               VARCHAR(255),
     phone               VARCHAR(40),
     course_id           UUID         NOT NULL REFERENCES courses (id),
