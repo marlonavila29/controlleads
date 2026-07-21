@@ -1,5 +1,6 @@
 package com.controlleads.config;
 
+import com.controlleads.common.ApiException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -13,6 +14,20 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    ProblemDetail handleAccessDenied() {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.FORBIDDEN);
+        problem.setTitle("Forbidden");
+        return problem;
+    }
+
+    @ExceptionHandler(ApiException.class)
+    ProblemDetail handleApi(ApiException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(ex.status());
+        problem.setTitle(ex.getMessage());
+        return problem;
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ProblemDetail handleValidation(MethodArgumentNotValidException ex) {

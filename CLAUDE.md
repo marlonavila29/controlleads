@@ -45,6 +45,9 @@ shared/
 
 **Environment quirks (this machine)**: Docker via Colima — Testcontainers socket override already set in `backend/pom.xml`. Host ports 5432/5433 and 8080–8083 are taken by other projects → Postgres runs on **5434**, backend on **8090**. Don't "fix" these back.
 
-**Next: Fase 1a — Auth & Users** (SPEC-001..003 in `.spec/discovery/roadmap.md`, requirements in `module_auth.md`): JWT + refresh, role enforcement, admin user management, login screens on both clients. Then Fase 1b (Catalogs + Leads/Pipeline).
+**Fase 1a DONE** (all verified): JWT HS256 + rotating refresh (hashed at rest, V2 migration), role enforcement (@PreAuthorize + resource server), admin user management, /api/me; seeded admin `admin@controlleads.local`/`admin123` (override APP_SEED_ADMIN_*). Web: AuthService signals + interceptor + guards, login/dashboard/team pages. App: AuthService ChangeNotifier, login/home. 6/6 backend e2e tests green.
+Boot 4 gotchas learned: TestRestTemplate package moved (use MockMvc — `org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc`); no com.fasterxml ObjectMapper bean (Jackson 3 default) — instantiate locally in tests; AccessDeniedException must be handled explicitly in the advice or @PreAuthorize denials become 500; Hibernate validate rejects CHAR columns for String fields (use VARCHAR).
+
+**Next: Fase 1b — Catalogs + Leads & Pipeline** (SPEC-004..007 in `.spec/discovery/roadmap.md`, requirements in `module_settings.md` + `module_leads.md`): catalog CRUD (courses/channels/stall reasons), lead CRUD with owner+UTM, status transitions writing immutable events, STALLED flow, list/filters + Kanban on both clients. Then 1c (Activities).
 
 Open decisions (small, decide in specs): activity edit window; email digest vs immediate; lead auto-assignment for Fase 2 public capture.

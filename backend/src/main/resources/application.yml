@@ -12,6 +12,14 @@ spring:
   flyway:
     enabled: true
 
+app:
+  security:
+    jwt:
+      # Base64-encoded HS256 key. Dev default only — set APP_SECURITY_JWT_SECRET in prod.
+      secret: ${APP_SECURITY_JWT_SECRET:ZGV2LW9ubHktc2VjcmV0LWNoYW5nZS1tZS1pbi1wcm9kdWN0aW9uISE=}
+      access-ttl: 15m
+      refresh-ttl: 14d
+
 springdoc:
   api-docs:
     path: /v3/api-docs

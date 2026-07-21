@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'ping/ping_screen.dart';
+import 'auth/auth_service.dart';
+import 'auth/login_screen.dart';
+import 'home/home_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -16,7 +18,12 @@ class ControlLeadsApp extends StatelessWidget {
       title: 'ControlLeads',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
-      home: const PingScreen(),
+      home: ListenableBuilder(
+        listenable: AuthService.instance,
+        builder: (context, _) => AuthService.instance.isAuthenticated
+            ? const HomeScreen()
+            : const LoginScreen(),
+      ),
     );
   }
 }

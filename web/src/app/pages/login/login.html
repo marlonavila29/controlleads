@@ -1,0 +1,24 @@
+<div class="login">
+  <form class="card" [formGroup]="form" (ngSubmit)="submit()">
+    <h1>ControlLeads</h1>
+    <p class="subtitle">Sign in to your account</p>
+
+    <label>
+      <span>Email</span>
+      <input type="email" formControlName="email" placeholder="you@school.edu" autocomplete="email" />
+    </label>
+
+    <label>
+      <span>Password</span>
+      <input type="password" formControlName="password" placeholder="••••••••" autocomplete="current-password" />
+    </label>
+
+    @if (error(); as message) {
+      <p class="error">{{ message }}</p>
+    }
+
+    <button type="submit" [disabled]="submitting()">
+      {{ submitting() ? 'Signing in…' : 'Sign in' }}
+    </button>
+  </form>
+</div>

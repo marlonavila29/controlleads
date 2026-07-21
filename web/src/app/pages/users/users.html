@@ -1,0 +1,55 @@
+<header class="topbar">
+  <a routerLink="/" class="brand">ControlLeads</a>
+  <span class="crumb">Team</span>
+</header>
+
+<main class="content">
+  <h1>Team members</h1>
+
+  <form class="card create" [formGroup]="form" (ngSubmit)="create()">
+    <input formControlName="name" placeholder="Full name" />
+    <input formControlName="email" type="email" placeholder="Email" />
+    <input formControlName="password" type="password" placeholder="Initial password (min. 8)" />
+    <select formControlName="role">
+      <option value="MARKETING_TEAM">Marketing team</option>
+      <option value="ADMINISTRATOR">Administrator</option>
+    </select>
+    <button type="submit" [disabled]="creating()">{{ creating() ? 'Adding…' : 'Add member' }}</button>
+  </form>
+  @if (error(); as message) {
+    <p class="error">{{ message }}</p>
+  }
+
+  <table class="card">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Role</th>
+        <th>Status</th>
+        <th>Since</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (member of members(); track member.id) {
+        <tr [class.inactive]="!member.active">
+          <td>{{ member.name }}</td>
+          <td>{{ member.email }}</td>
+          <td>{{ member.role === 'ADMINISTRATOR' ? 'Administrator' : 'Marketing team' }}</td>
+          <td>
+            <span class="chip" [class.chip--ok]="member.active" [class.chip--off]="!member.active">
+              {{ member.active ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td>{{ member.createdAt | date: 'mediumDate' }}</td>
+          <td>
+            <button type="button" class="link" (click)="toggleActive(member)">
+              {{ member.active ? 'Deactivate' : 'Reactivate' }}
+            </button>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</main>

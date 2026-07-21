@@ -1,0 +1,22 @@
+<header class="topbar">
+  <span class="brand">ControlLeads</span>
+  <nav>
+    @if (auth.isAdmin()) {
+      <a routerLink="/users">Team</a>
+    }
+  </nav>
+  <div class="account">
+    <span class="who">{{ auth.user()?.name }}</span>
+    <button type="button" (click)="auth.logout()">Sign out</button>
+  </div>
+</header>
+
+<main class="content">
+  <h1>Welcome, {{ auth.user()?.name }}</h1>
+  <p class="subtitle">
+    Your pipeline dashboard will live here (Fase 1d).
+    @if (ping(); as p) {
+      <span class="chip chip--ok">API {{ p.status }}</span>
+    }
+  </p>
+</main>
