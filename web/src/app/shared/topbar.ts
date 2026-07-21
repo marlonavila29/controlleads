@@ -1,10 +1,11 @@
 import { Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../core/auth/auth.service';
+import { NotificationBell } from './notification-bell';
 
 @Component({
   selector: 'app-topbar',
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, NotificationBell],
   template: `
     <header class="topbar">
       <a routerLink="/" class="brand">ControlLeads</a>
@@ -17,6 +18,7 @@ import { AuthService } from '../core/auth/auth.service';
         }
       </nav>
       <div class="account">
+        <app-notification-bell />
         <span class="who">{{ auth.user()?.name }}</span>
         <button type="button" (click)="auth.logout()">Sign out</button>
       </div>

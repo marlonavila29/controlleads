@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../auth/auth_service.dart';
+import '../notifications/notifications_screen.dart';
+import '../notifications/notifications_service.dart';
 import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 import 'lead_detail_screen.dart';
@@ -19,6 +21,7 @@ class _LeadsScreenState extends State<LeadsScreen> {
   String? _statusFilter;
   String _query = '';
   String? _error;
+  int _unread = 0;
 
   @override
   void initState() {
@@ -28,6 +31,23 @@ class _LeadsScreenState extends State<LeadsScreen> {
     LeadsService.instance.catalog('channels');
     LeadsService.instance.catalog('stall-reasons');
     _reload();
+    _refreshUnread();
+  }
+
+  Future<void> _refreshUnread() async {
+    try {
+      final count = await NotificationsService.instance.unreadCount();
+      if (mounted) setState(() => _unread = count);
+    } catch (_) {
+      // notifications endpoint may be unavailable; ignore.
+    }
+  }
+
+  Future<void> _openNotifications() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+    );
+    _refreshUnread();
   }
 
   Future<void> _reload() async {
@@ -45,6 +65,15 @@ class _LeadsScreenState extends State<LeadsScreen> {
       appBar: AppBar(
         title: const Text('My leads'),
         actions: [
+          IconButton(
+            tooltip: 'Notifications',
+            icon: Badge(
+              isLabelVisible: _unread > 0,
+              label: Text(_unread > 9 ? '9+' : '$_unread'),
+              child: const Icon(Icons.notifications_outlined),
+            ),
+            onPressed: _openNotifications,
+          ),
           IconButton(
             tooltip: 'Sign out',
             icon: const Icon(Icons.logout),
