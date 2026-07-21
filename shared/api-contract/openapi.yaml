@@ -349,6 +349,21 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/CatalogDto"
+  /api/auth/reset-password:
+    post:
+      tags:
+      - auth
+      summary: Set a new password using a reset token; revokes all existing sessions
+      operationId: resetPassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+        required: true
+      responses:
+        "204":
+          description: No Content
   /api/auth/refresh:
     post:
       tags:
@@ -388,6 +403,22 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/AuthResponse"
+  /api/auth/forgot-password:
+    post:
+      tags:
+      - auth
+      summary: "Request a password reset link by email (always succeeds, never reveals\
+        \ if the email exists)"
+      operationId: forgotPassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordRequest"
+        required: true
+      responses:
+        "204":
+          description: No Content
   /api/activities/{id}/complete:
     post:
       tags:
@@ -1043,6 +1074,19 @@ components:
         createdAt:
           type: string
           format: date-time
+    ResetPasswordRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+        newPassword:
+          type: string
+          maxLength: 2147483647
+          minLength: 8
+      required:
+      - newPassword
+      - token
     RefreshRequest:
       type: object
       properties:
@@ -1073,6 +1117,15 @@ components:
       required:
       - email
       - password
+    ForgotPasswordRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+      required:
+      - email
     UpdateUserRequest:
       type: object
       properties:
