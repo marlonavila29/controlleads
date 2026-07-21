@@ -109,4 +109,14 @@ export class LeadsService {
     if (phone) params = params.set('phone', phone);
     return this.http.get<Duplicate[]>('/api/leads/duplicates', { params });
   }
+
+  exportCsv(filters: LeadFilters = {}) {
+    let params = new HttpParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== null && value !== '') {
+        params = params.set(key, String(value));
+      }
+    }
+    return this.http.get('/api/leads/export.csv', { params, responseType: 'blob' });
+  }
 }

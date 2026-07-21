@@ -27,6 +27,7 @@
         <th>Email</th>
         <th>Role</th>
         <th>Status</th>
+        <th>Leads</th>
         <th>Since</th>
         <th></th>
       </tr>
@@ -42,13 +43,35 @@
               {{ member.active ? 'Active' : 'Inactive' }}
             </span>
           </td>
+          <td>{{ member.leadCount }}</td>
           <td>{{ member.createdAt | date: 'mediumDate' }}</td>
-          <td>
+          <td class="actions">
+            @if (member.leadCount > 0) {
+              <button type="button" class="link" (click)="startReassign(member)">Reassign</button>
+            }
             <button type="button" class="link" (click)="toggleActive(member)">
               {{ member.active ? 'Deactivate' : 'Reactivate' }}
             </button>
           </td>
         </tr>
+        @if (reassigningId() === member.id) {
+          <tr class="reassign-row">
+            <td colspan="7">
+              Move {{ member.leadCount }} lead{{ member.leadCount > 1 ? 's' : '' }} from
+              <strong>{{ member.name }}</strong> to
+              <select [(ngModel)]="reassignTargetId">
+                <option value="" disabled>Select a team member…</option>
+                @for (other of otherActiveMembers(member.id); track other.id) {
+                  <option [value]="other.id">{{ other.name }}</option>
+                }
+              </select>
+              <button type="button" class="primary-sm" [disabled]="!reassignTargetId" (click)="confirmReassign(member)">
+                Reassign
+              </button>
+              <button type="button" class="link" (click)="reassigningId.set(null)">Cancel</button>
+            </td>
+          </tr>
+        }
       }
     </tbody>
   </table>

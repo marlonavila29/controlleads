@@ -56,6 +56,24 @@ export class Leads {
     this.reload();
   }
 
+  protected exportCsv(): void {
+    this.leadsService
+      .exportCsv({
+        q: this.q || undefined,
+        status: (this.status || undefined) as LeadStatus | undefined,
+        courseId: this.courseId || undefined,
+        channelId: this.channelId || undefined
+      })
+      .subscribe((blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'leads.csv';
+        link.click();
+        URL.revokeObjectURL(url);
+      });
+  }
+
   protected goTo(lead: Lead): void {
     this.router.navigate(['/leads', lead.id]);
   }

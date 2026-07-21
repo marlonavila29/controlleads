@@ -1,7 +1,18 @@
 <app-topbar />
 
 <main class="content">
-  <h1>Welcome, {{ auth.user()?.name }}</h1>
+  <div class="dash-head">
+    <h1>Welcome, {{ auth.user()?.name }}</h1>
+    <div class="period no-print">
+      <label>From <input type="date" [(ngModel)]="from" /></label>
+      <label>To <input type="date" [(ngModel)]="to" /></label>
+      <button type="button" (click)="applyPeriod()">Apply</button>
+      @if (from || to) {
+        <button type="button" class="ghost" (click)="clearPeriod()">Clear</button>
+      }
+      <button type="button" class="ghost" (click)="print()">🖨 Print / PDF</button>
+    </div>
+  </div>
 
   @if (offline()) {
     <p class="notice">

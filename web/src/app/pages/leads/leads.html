@@ -3,7 +3,10 @@
 <main class="content">
   <div class="heading">
     <h1>Leads</h1>
-    <a routerLink="/leads/new" class="primary">+ New lead</a>
+    <div class="heading-actions">
+      <button type="button" class="secondary" (click)="exportCsv()">↓ Export CSV</button>
+      <a routerLink="/leads/new" class="primary">+ New lead</a>
+    </div>
   </div>
 
   <div class="filters card">

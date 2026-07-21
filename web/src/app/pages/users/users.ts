@@ -1,18 +1,19 @@
 import { HttpClient } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthUser, UserRole } from '../../core/auth/auth.service';
 
 interface TeamMember extends AuthUser {
   active: boolean;
   createdAt: string;
+  leadCount: number;
 }
 
 @Component({
   selector: 'app-users',
-  imports: [ReactiveFormsModule, RouterLink, DatePipe],
+  imports: [ReactiveFormsModule, FormsModule, RouterLink, DatePipe],
   templateUrl: './users.html',
   styleUrl: './users.scss'
 })
@@ -23,6 +24,14 @@ export class Users {
   protected readonly members = signal<TeamMember[]>([]);
   protected readonly error = signal<string | null>(null);
   protected readonly creating = signal(false);
+
+  // Inline "reassign this user's leads" state.
+  protected readonly reassigningId = signal<string | null>(null);
+  protected reassignTargetId = '';
+
+  protected otherActiveMembers(memberId: string): TeamMember[] {
+    return this.members().filter((m) => m.id !== memberId && m.active);
+  }
 
   protected readonly form = this.fb.nonNullable.group({
     name: ['', Validators.required],
@@ -63,5 +72,25 @@ export class Users {
     this.http
       .patch<TeamMember>(`/api/users/${member.id}`, { active: !member.active })
       .subscribe(() => this.reload());
+  }
+
+  protected startReassign(member: TeamMember): void {
+    this.reassignTargetId = '';
+    this.reassigningId.set(member.id);
+  }
+
+  protected confirmReassign(member: TeamMember): void {
+    if (!this.reassignTargetId) return;
+    this.http
+      .post<{ reassigned: number }>(`/api/users/${member.id}/reassign-leads`, {
+        toUserId: this.reassignTargetId
+      })
+      .subscribe({
+        next: () => {
+          this.reassigningId.set(null);
+          this.reload();
+        },
+        error: (err) => this.error.set(err.error?.title ?? 'Could not reassign leads.')
+      });
   }
 }

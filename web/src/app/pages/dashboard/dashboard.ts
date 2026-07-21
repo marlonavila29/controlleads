@@ -1,11 +1,13 @@
 import { DatePipe, DecimalPipe, PercentPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import type { EChartsOption } from 'echarts';
 import { ActivitiesService, FollowUpTask } from '../../core/api/activities.service';
 import {
   AnalyticsService,
   AnalyticsSummary,
+  DateRange,
   LeaderboardRow
 } from '../../core/api/analytics.service';
 import { STATUS_LABELS } from '../../core/api/leads.service';
@@ -15,7 +17,7 @@ import { Topbar } from '../../shared/topbar';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [Chart, DatePipe, DecimalPipe, PercentPipe, RouterLink, Topbar],
+  imports: [Chart, DatePipe, DecimalPipe, FormsModule, PercentPipe, RouterLink, Topbar],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss'
 })
@@ -34,16 +36,35 @@ export class Dashboard {
   protected readonly followUps = signal<FollowUpTask[]>([]);
   protected readonly offline = signal(false);
 
+  // Bound to the period-filter date inputs.
+  protected from = '';
+  protected to = '';
+
   constructor() {
     this.load();
   }
 
+  protected applyPeriod(): void {
+    this.load();
+  }
+
+  protected clearPeriod(): void {
+    this.from = '';
+    this.to = '';
+    this.load();
+  }
+
+  protected print(): void {
+    window.print();
+  }
+
   private load(): void {
     const fail = () => this.offline.set(true);
+    const range: DateRange = { from: this.from || undefined, to: this.to || undefined };
 
-    this.analytics.summary().subscribe({ next: (s) => this.summary.set(s), error: fail });
+    this.analytics.summary(range).subscribe({ next: (s) => this.summary.set(s), error: fail });
 
-    this.analytics.funnel().subscribe({
+    this.analytics.funnel(range).subscribe({
       next: (stages) => {
         const statusColor: Record<string, string> = {
           LEAD: cssVar('--cl-color-status-lead'),
@@ -73,7 +94,7 @@ export class Dashboard {
       error: fail
     });
 
-    this.analytics.dropOff().subscribe({
+    this.analytics.dropOff(range).subscribe({
       next: (rows) => {
         const byReason = new Map<string, number>();
         for (const row of rows) {
@@ -100,7 +121,7 @@ export class Dashboard {
       error: fail
     });
 
-    this.analytics.timeseries('week').subscribe({
+    this.analytics.timeseries('week', range).subscribe({
       next: (points) => {
         this.timeseriesChart.set({
           ...baseChartOption(),
@@ -131,7 +152,7 @@ export class Dashboard {
       error: fail
     });
 
-    this.analytics.byChannel().subscribe({
+    this.analytics.byChannel(range).subscribe({
       next: (rows) => {
         this.channelChart.set({
           ...baseChartOption(),
@@ -154,7 +175,7 @@ export class Dashboard {
       error: fail
     });
 
-    this.analytics.byCountry().subscribe({
+    this.analytics.byCountry(range).subscribe({
       next: (rows) => {
         const top = rows.slice(0, 12).reverse();
         this.countryChart.set({
@@ -176,7 +197,7 @@ export class Dashboard {
     });
 
     if (this.auth.isAdmin()) {
-      this.analytics.leaderboard().subscribe({
+      this.analytics.leaderboard(range).subscribe({
         next: (rows) => this.leaderboard.set(rows),
         error: fail
       });
