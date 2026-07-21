@@ -3,6 +3,10 @@
     <h1>ControlLeads</h1>
     <p class="subtitle">Sign in to your account</p>
 
+    @if (reset() === '1') {
+      <p class="success">Your password was reset — sign in with your new password.</p>
+    }
+
     <label>
       <span>Email</span>
       <input type="email" formControlName="email" placeholder="you@school.edu" autocomplete="email" />
@@ -12,6 +16,8 @@
       <span>Password</span>
       <input type="password" formControlName="password" placeholder="••••••••" autocomplete="current-password" />
     </label>
+
+    <a routerLink="/forgot-password" class="forgot">Forgot password?</a>
 
     @if (error(); as message) {
       <p class="error">{{ message }}</p>

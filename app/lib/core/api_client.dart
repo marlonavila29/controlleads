@@ -21,7 +21,7 @@ class ApiClient {
       _send('PATCH', path, body: body);
 
   Future<dynamic> _send(String method, String path,
-      {Map<String, String>? query, Map<String, dynamic>? body}) async {
+      {Map<String, String>? query, Map<String, dynamic>? body, bool retry = true}) async {
     final client = HttpClient();
     try {
       var uri = Uri.parse('${ApiConfig.baseUrl}$path');
@@ -41,6 +41,13 @@ class ApiClient {
       final text = await response.transform(utf8.decoder).join();
 
       if (response.statusCode == 401) {
+        // Try one silent refresh, then replay the request with the new token.
+        if (retry && !path.startsWith('/api/auth/')) {
+          await AuthService.instance.refresh();
+          if (AuthService.instance.isAuthenticated) {
+            return _send(method, path, query: query, body: body, retry: false);
+          }
+        }
         AuthService.instance.logout();
         throw const ApiError(401, 'Session expired — sign in again.');
       }

@@ -66,7 +66,15 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<void> refresh() async {
+  Future<void>? _refreshing;
+
+  /// Single-flight refresh: concurrent 401s share one rotation call (the
+  /// rotating refresh token is one-shot, so parallel calls would fail).
+  Future<void> refresh() {
+    return _refreshing ??= _doRefresh().whenComplete(() => _refreshing = null);
+  }
+
+  Future<void> _doRefresh() async {
     final token = _refreshToken;
     if (token == null) return;
     final client = HttpClient();

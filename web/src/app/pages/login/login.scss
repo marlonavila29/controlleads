@@ -82,3 +82,34 @@ button {
   font-size: var(--cl-font-size-sm);
   color: var(--cl-color-semantic-danger);
 }
+
+.success {
+  margin: 0;
+  padding: var(--cl-space-2) var(--cl-space-3);
+  border-radius: var(--cl-radius-md);
+  background: #ecfdf5;
+  color: var(--cl-color-semantic-success);
+  font-size: var(--cl-font-size-sm);
+}
+
+.forgot {
+  justify-self: flex-end;
+  font-size: var(--cl-font-size-sm);
+  color: var(--cl-color-brand-primary);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.link-back {
+  justify-self: center;
+  font-size: var(--cl-font-size-sm);
+  color: var(--cl-color-neutral-600);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--cl-color-brand-primary);
+  }
+}
