@@ -9,6 +9,7 @@ import com.controlleads.analytics.AnalyticsController.Summary;
 import com.controlleads.analytics.AnalyticsController.TimePoint;
 import com.controlleads.common.ApiException;
 import com.controlleads.common.CurrentUser;
+import com.controlleads.settings.AppSettingsService;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -39,9 +40,11 @@ public class AnalyticsService {
         Map.of("channels", "channel_id", "courses", "course_id");
 
     private final NamedParameterJdbcTemplate jdbc;
+    private final AppSettingsService settings;
 
-    public AnalyticsService(NamedParameterJdbcTemplate jdbc) {
+    public AnalyticsService(NamedParameterJdbcTemplate jdbc, AppSettingsService settings) {
         this.jdbc = jdbc;
+        this.settings = settings;
     }
 
     // ---- summary -------------------------------------------------------------
@@ -52,7 +55,7 @@ public class AnalyticsService {
         OffsetDateTime[] window = window(from, to, 30);
         params.addValue("from", window[0]);
         params.addValue("toExcl", window[1]);
-        params.addValue("hotHours", hotLeadMaxHours());
+        params.addValue("hotHours", settings.hotLeadMaxHours());
 
         long total = count("SELECT count(*) FROM leads l WHERE l.deleted_at IS NULL" + scope, params);
         long newLeads = count("SELECT count(*) FROM leads l WHERE l.deleted_at IS NULL" + scope
@@ -230,17 +233,6 @@ public class AnalyticsService {
     private long count(String sql, MapSqlParameterSource params) {
         Long value = jdbc.queryForObject(sql, params, Long.class);
         return value == null ? 0L : value;
-    }
-
-    private int hotLeadMaxHours() {
-        try {
-            Integer hours = jdbc.queryForObject(
-                "SELECT (value #>> '{}')::int FROM app_settings WHERE key = 'hot_lead_max_hours'",
-                new MapSqlParameterSource(), Integer.class);
-            return hours == null ? 24 : hours;
-        } catch (RuntimeException e) {
-            return 24;
-        }
     }
 
     /**

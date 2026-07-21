@@ -1,5 +1,6 @@
 package com.controlleads.activities;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,6 +10,15 @@ import org.springframework.data.repository.query.Param;
 public interface ActivityRepository extends JpaRepository<Activity, UUID> {
 
     List<Activity> findByLeadIdOrderByCreatedAtAsc(UUID leadId);
+
+    /** Open follow-ups whose due date has arrived. */
+    @Query("""
+        SELECT a FROM Activity a
+        WHERE a.type = com.controlleads.activities.ActivityType.FOLLOW_UP
+          AND a.completedAt IS NULL
+          AND a.dueAt <= :now
+        """)
+    List<Activity> findDueFollowUps(@Param("now") Instant now);
 
     /** Open follow-ups on leads currently owned by the given user. */
     @Query("""

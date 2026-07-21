@@ -72,6 +72,31 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/CatalogDto"
+  /api/notifications/{id}/read:
+    post:
+      tags:
+      - notifications
+      summary: Mark one notification as read
+      operationId: markRead
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: No Content
+  /api/notifications/read-all:
+    post:
+      tags:
+      - notifications
+      summary: Mark all my notifications as read
+      operationId: markAllRead
+      responses:
+        "204":
+          description: No Content
   /api/me/password:
     post:
       tags:
@@ -546,6 +571,34 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/PingResponse"
+  /api/notifications:
+    get:
+      tags:
+      - notifications
+      summary: My recent notifications (newest first)
+      operationId: recent
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NotificationDto"
+  /api/notifications/unread-count:
+    get:
+      tags:
+      - notifications
+      summary: Count of my unread notifications
+      operationId: unreadCount
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UnreadCountDto"
   /api/my/follow-ups:
     get:
       tags:
@@ -1070,6 +1123,34 @@ components:
         serverTime:
           type: string
           format: date-time
+    NotificationDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+          - SLA_BREACH
+          - FOLLOW_UP_DUE
+        leadId:
+          type: string
+          format: uuid
+        leadName:
+          type: string
+        readAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    UnreadCountDto:
+      type: object
+      properties:
+        count:
+          type: integer
+          format: int64
     FollowUpDto:
       type: object
       properties:
