@@ -1,0 +1,51 @@
+<app-topbar />
+
+<main class="content">
+  <div class="heading">
+    <h1>Pipeline board</h1>
+    @if (error(); as message) {
+      <span class="error">{{ message }}</span>
+    }
+  </div>
+
+  @if (pendingStall(); as lead) {
+    <div class="stall card">
+      <strong>Why did {{ lead.fullName }} stop?</strong>
+      <select [(ngModel)]="stallReasonId">
+        <option value="" disabled>Select a reason…</option>
+        @for (r of catalogs.activeStallReasons(); track r.id) {
+          <option [value]="r.id">{{ r.name }}</option>
+        }
+      </select>
+      <div class="stall-actions">
+        <button (click)="pendingStall.set(null)">Cancel</button>
+        <button class="danger" [disabled]="!stallReasonId" (click)="confirmStall()">Mark stalled</button>
+      </div>
+    </div>
+  }
+
+  <div class="board">
+    @for (column of columns; track column) {
+      <section class="column" [class]="'column column--' + column.toLowerCase()">
+        <header>
+          <span>{{ statusLabels[column] }}</span>
+          <span class="count">{{ byStatus()[column].length }}</span>
+        </header>
+        <div
+          class="cards"
+          cdkDropList
+          [cdkDropListData]="column"
+          (cdkDropListDropped)="drop($event)"
+        >
+          @for (lead of byStatus()[column]; track lead.id) {
+            <a class="lead card" cdkDrag [cdkDragData]="lead" [routerLink]="['/leads', lead.id]">
+              <strong>{{ lead.fullName }}</strong>
+              <span class="meta">{{ lead.countryCode }} · {{ catalogs.nameOf('courses', lead.courseId) }}</span>
+              <span class="meta owner">{{ lead.assignedToName }}</span>
+            </a>
+          }
+        </div>
+      </section>
+    }
+  </div>
+</main>

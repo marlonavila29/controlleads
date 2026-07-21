@@ -1,0 +1,79 @@
+<app-topbar />
+
+<main class="content">
+  <div class="heading">
+    <h1>New lead</h1>
+    <a routerLink="/leads">‹ Back to leads</a>
+  </div>
+
+  <form class="card" [formGroup]="form" (ngSubmit)="submit()">
+    <div class="grid">
+      <label class="span2">
+        <span>Full name *</span>
+        <input formControlName="fullName" placeholder="e.g. Nguyen Van An" />
+      </label>
+      <label>
+        <span>Country (ISO code) *</span>
+        <input formControlName="countryCode" placeholder="e.g. VN" maxlength="2" class="upper" />
+      </label>
+      <label>
+        <span>Email</span>
+        <input formControlName="email" type="email" placeholder="lead@example.com" />
+      </label>
+      <label>
+        <span>Phone</span>
+        <input formControlName="phone" placeholder="+84 912 345 678" />
+      </label>
+      <label>
+        <span>Course of interest *</span>
+        <select formControlName="courseId">
+          <option value="" disabled>Select a course…</option>
+          @for (c of catalogs.activeCourses(); track c.id) {
+            <option [value]="c.id">{{ c.name }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        <span>Source channel *</span>
+        <select formControlName="channelId">
+          <option value="" disabled>Select a channel…</option>
+          @for (c of catalogs.activeChannels(); track c.id) {
+            <option [value]="c.id">{{ c.name }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        <span>UTM source</span>
+        <input formControlName="utmSource" placeholder="instagram" />
+      </label>
+      <label>
+        <span>UTM medium</span>
+        <input formControlName="utmMedium" placeholder="paid_social" />
+      </label>
+      <label>
+        <span>UTM campaign</span>
+        <input formControlName="utmCampaign" placeholder="fall_intake_2026" />
+      </label>
+    </div>
+
+    @if (duplicates().length > 0) {
+      <div class="warning">
+        ⚠️ Possible duplicate{{ duplicates().length > 1 ? 's' : '' }}:
+        @for (d of duplicates(); track d.id) {
+          <a [routerLink]="['/leads', d.id]">{{ d.fullName }} ({{ d.status }}, {{ d.assignedToName }})</a>
+        }
+        — you can still save if this is a different person.
+      </div>
+    }
+
+    @if (error(); as message) {
+      <p class="error">{{ message }}</p>
+    }
+
+    <div class="actions">
+      <button type="submit" [disabled]="submitting()">
+        {{ submitting() ? 'Saving…' : 'Create lead' }}
+      </button>
+    </div>
+  </form>
+</main>

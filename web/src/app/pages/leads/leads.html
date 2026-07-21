@@ -1,0 +1,72 @@
+<app-topbar />
+
+<main class="content">
+  <div class="heading">
+    <h1>Leads</h1>
+    <a routerLink="/leads/new" class="primary">+ New lead</a>
+  </div>
+
+  <div class="filters card">
+    <input placeholder="Search name, email or phone…" [(ngModel)]="q" (keyup.enter)="applyFilters()" />
+    <select [(ngModel)]="status" (change)="applyFilters()">
+      <option value="">All statuses</option>
+      @for (s of statuses; track s) {
+        <option [value]="s">{{ statusLabels[s] }}</option>
+      }
+    </select>
+    <select [(ngModel)]="courseId" (change)="applyFilters()">
+      <option value="">All courses</option>
+      @for (c of catalogs.courses(); track c.id) {
+        <option [value]="c.id">{{ c.name }}</option>
+      }
+    </select>
+    <select [(ngModel)]="channelId" (change)="applyFilters()">
+      <option value="">All channels</option>
+      @for (c of catalogs.channels(); track c.id) {
+        <option [value]="c.id">{{ c.name }}</option>
+      }
+    </select>
+    <button type="button" (click)="applyFilters()">Filter</button>
+  </div>
+
+  @if (page(); as p) {
+    <table class="card">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Country</th>
+          <th>Course</th>
+          <th>Channel</th>
+          <th>Status</th>
+          <th>Owner</th>
+          <th>Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (lead of p.content; track lead.id) {
+          <tr (click)="goTo(lead)">
+            <td class="strong">{{ lead.fullName }}</td>
+            <td>{{ lead.countryCode }}</td>
+            <td>{{ catalogs.nameOf('courses', lead.courseId) }}</td>
+            <td>{{ catalogs.nameOf('channels', lead.channelId) }}</td>
+            <td><app-status-badge [status]="lead.status" /></td>
+            <td>{{ lead.assignedToName }}</td>
+            <td>{{ lead.createdAt | date: 'mediumDate' }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="empty">No leads found. Create the first one!</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    @if (p.totalPages > 1) {
+      <div class="pager">
+        <button [disabled]="p.page === 0" (click)="move(-1)">‹ Prev</button>
+        <span>Page {{ p.page + 1 }} of {{ p.totalPages }} · {{ p.totalElements }} leads</span>
+        <button [disabled]="p.page >= p.totalPages - 1" (click)="move(1)">Next ›</button>
+      </div>
+    }
+  }
+</main>

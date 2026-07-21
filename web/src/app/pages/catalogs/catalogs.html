@@ -1,0 +1,33 @@
+<app-topbar />
+
+<main class="content">
+  <h1>Catalogs</h1>
+  @if (error(); as message) {
+    <p class="error">{{ message }}</p>
+  }
+
+  <div class="grid">
+    @for (section of sections; track section.kind) {
+      <section class="card">
+        <h2>{{ section.title }}</h2>
+        <p class="hint">{{ section.hint }}</p>
+
+        <form class="add" (submit)="$event.preventDefault(); add(section.kind)">
+          <input [(ngModel)]="drafts[section.kind]" [name]="section.kind" placeholder="Add new…" />
+          <button type="submit">Add</button>
+        </form>
+
+        <ul>
+          @for (item of itemsOf(section.kind); track item.id) {
+            <li [class.inactive]="!item.active">
+              <span>{{ item.name }}</span>
+              <button type="button" (click)="toggle(section.kind, item.id, item.active)">
+                {{ item.active ? 'Deactivate' : 'Reactivate' }}
+              </button>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  </div>
+</main>

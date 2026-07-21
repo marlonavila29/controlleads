@@ -1,0 +1,151 @@
+<app-topbar />
+
+<main class="content">
+  @if (detail(); as d) {
+    <div class="heading">
+      <div>
+        <a routerLink="/leads" class="back">‹ Leads</a>
+        <h1>{{ d.lead.fullName }}</h1>
+        <app-status-badge [status]="d.lead.status" />
+      </div>
+      <div class="actions">
+        @if (nextStage(); as next) {
+          <button class="primary" (click)="advance()">Advance to {{ statusLabels[next] }} →</button>
+        }
+        @if (d.lead.status === 'STALLED') {
+          <button class="primary" (click)="reactivate()">
+            Reactivate to {{ statusLabels[d.lead.stalledFromStatus!] }}
+          </button>
+        } @else if (d.lead.status !== 'STUDENT') {
+          <button class="danger" (click)="stalling.set(true)">Mark as stalled</button>
+        }
+      </div>
+    </div>
+
+    @if (error(); as message) {
+      <p class="error">{{ message }}</p>
+    }
+
+    @if (stalling()) {
+      <div class="card stall">
+        <strong>Why did this lead stop?</strong>
+        <select [(ngModel)]="stallReasonId">
+          <option value="" disabled>Select a reason…</option>
+          @for (r of catalogs.activeStallReasons(); track r.id) {
+            <option [value]="r.id">{{ r.name }}</option>
+          }
+        </select>
+        <input [(ngModel)]="stallNote" placeholder="Optional note…" />
+        <div class="stall-actions">
+          <button (click)="stalling.set(false)">Cancel</button>
+          <button class="danger" [disabled]="!stallReasonId" (click)="confirmStall()">Confirm</button>
+        </div>
+      </div>
+    }
+
+    <div class="columns">
+      <section class="card info">
+        <h2>Details</h2>
+        <dl>
+          <dt>Country</dt>
+          <dd>{{ d.lead.countryCode }}</dd>
+          <dt>Email</dt>
+          <dd>{{ d.lead.email ?? '—' }}</dd>
+          <dt>Phone</dt>
+          <dd>{{ d.lead.phone ?? '—' }}</dd>
+          <dt>Course</dt>
+          <dd>{{ catalogs.nameOf('courses', d.lead.courseId) }}</dd>
+          <dt>Channel</dt>
+          <dd>{{ catalogs.nameOf('channels', d.lead.channelId) }}</dd>
+          @if (d.lead.utmSource) {
+            <dt>UTM</dt>
+            <dd>{{ d.lead.utmSource }} / {{ d.lead.utmMedium ?? '—' }} / {{ d.lead.utmCampaign ?? '—' }}</dd>
+          }
+          <dt>Owner</dt>
+          <dd>{{ d.lead.assignedToName }}</dd>
+          <dt>Created</dt>
+          <dd>{{ d.lead.createdAt | date: 'medium' }}</dd>
+          <dt>Last contact</dt>
+          <dd>{{ d.lead.lastContactedAt ? (d.lead.lastContactedAt | date: 'medium') : 'Never' }}</dd>
+          @if (d.lead.status === 'STALLED') {
+            <dt>Stalled at</dt>
+            <dd>{{ statusLabels[d.lead.stalledFromStatus!] }} — {{ catalogs.nameOf('stall-reasons', d.lead.stallReasonId) }}</dd>
+          }
+        </dl>
+      </section>
+
+      <section class="card history">
+        <h2>Timeline</h2>
+
+        <form class="composer" (submit)="$event.preventDefault(); addActivity()">
+          <div class="composer-row">
+            <select [(ngModel)]="newActivityType" name="type">
+              @for (t of activityTypes; track t) {
+                <option [value]="t">{{ activityIcons[t] }} {{ activityLabels[t] }}</option>
+              }
+            </select>
+            @if (newActivityType === 'FOLLOW_UP') {
+              <input type="datetime-local" [(ngModel)]="newActivityDue" name="due" />
+            }
+          </div>
+          <div class="composer-row">
+            <input
+              [(ngModel)]="newActivityContent"
+              name="content"
+              placeholder="Log a call, note, message…"
+            />
+            <button type="submit" [disabled]="savingActivity() || !newActivityContent.trim()">
+              {{ savingActivity() ? 'Saving…' : 'Add' }}
+            </button>
+          </div>
+        </form>
+
+        <ol>
+          @for (entry of timeline(); track entry.status?.id ?? entry.activity?.id) {
+            <li>
+              @if (entry.status; as event) {
+                <div class="dot" [class]="'dot dot--' + event.toStatus.toLowerCase()"></div>
+                <div>
+                  <div class="line">
+                    @if (event.fromStatus) {
+                      {{ statusLabels[event.fromStatus] }} →
+                    }
+                    <strong>{{ statusLabels[event.toStatus] }}</strong>
+                    @if (event.stallReasonId) {
+                      <em>({{ catalogs.nameOf('stall-reasons', event.stallReasonId) }})</em>
+                    }
+                  </div>
+                  @if (event.note) {
+                    <div class="note">“{{ event.note }}”</div>
+                  }
+                  <div class="meta">{{ event.changedByName }} · {{ event.changedAt | date: 'medium' }}</div>
+                </div>
+              } @else if (entry.activity; as activity) {
+                <div class="icon">{{ activityIcons[activity.type] }}</div>
+                <div>
+                  <div class="line">
+                    <strong>{{ activityLabels[activity.type] }}</strong>
+                    @if (activity.type === 'FOLLOW_UP') {
+                      @if (activity.completedAt) {
+                        <em class="done">✓ done</em>
+                      } @else if (activity.dueAt) {
+                        <em>due {{ activity.dueAt | date: 'short' }}</em>
+                        <button type="button" class="link" (click)="completeActivity(activity)">
+                          Complete
+                        </button>
+                      }
+                    }
+                  </div>
+                  <div class="note">{{ activity.content }}</div>
+                  <div class="meta">{{ activity.createdByName }} · {{ activity.createdAt | date: 'medium' }}</div>
+                </div>
+              }
+            </li>
+          }
+        </ol>
+      </section>
+    </div>
+  } @else if (error(); as message) {
+    <p class="error">{{ message }}</p>
+  }
+</main>

@@ -1,22 +1,100 @@
-<header class="topbar">
-  <span class="brand">ControlLeads</span>
-  <nav>
-    @if (auth.isAdmin()) {
-      <a routerLink="/users">Team</a>
-    }
-  </nav>
-  <div class="account">
-    <span class="who">{{ auth.user()?.name }}</span>
-    <button type="button" (click)="auth.logout()">Sign out</button>
-  </div>
-</header>
+<app-topbar />
 
 <main class="content">
   <h1>Welcome, {{ auth.user()?.name }}</h1>
-  <p class="subtitle">
-    Your pipeline dashboard will live here (Fase 1d).
-    @if (ping(); as p) {
-      <span class="chip chip--ok">API {{ p.status }}</span>
+
+  @if (offline()) {
+    <p class="notice">
+      Analytics endpoints are not available yet — charts will light up once the backend lands (Fase 1d).
+      Meanwhile, jump into your <a routerLink="/leads">leads</a> or the <a routerLink="/board">board</a>.
+    </p>
+  }
+
+  @if (summary(); as s) {
+    <div class="kpis">
+      <div class="kpi card">
+        <span class="value">{{ s.totalLeads }}</span>
+        <span class="label">Total leads</span>
+      </div>
+      <div class="kpi card">
+        <span class="value">{{ s.newLeads }}</span>
+        <span class="label">New this period</span>
+      </div>
+      <div class="kpi card">
+        <span class="value">{{ s.conversionRate | percent: '1.0-1' }}</span>
+        <span class="label">Conversion rate</span>
+      </div>
+      <div class="kpi card">
+        <span class="value">{{ s.avgDaysToConvert !== null ? (s.avgDaysToConvert | number: '1.0-0') : '—' }}</span>
+        <span class="label">Avg. days to convert</span>
+      </div>
+      <div class="kpi card" [class.alert]="s.slaBreaches > 0">
+        <span class="value">{{ s.slaBreaches }}</span>
+        <span class="label">SLA breaches</span>
+      </div>
+    </div>
+  }
+
+  @if (followUps().length > 0) {
+    <section class="card tasks">
+      <h2>My tasks</h2>
+      <ul>
+        @for (task of followUps(); track task.id) {
+          <li>
+            <a [routerLink]="['/leads', task.leadId]">{{ task.leadName }}</a>
+            <span class="task-content">{{ task.content }}</span>
+            <span class="due">due {{ task.dueAt | date: 'short' }}</span>
+            <button type="button" (click)="completeTask(task)">Done ✓</button>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  <div class="charts">
+    @if (funnelChart(); as options) {
+      <section class="card chart-card span2">
+        <h2>Funnel</h2>
+        <app-chart [options]="options" height="300px" />
+      </section>
     }
-  </p>
+    @if (dropOffChart(); as options) {
+      <section class="card chart-card">
+        <h2>Why leads stall</h2>
+        <app-chart [options]="options" height="300px" />
+      </section>
+    }
+    @if (timeseriesChart(); as options) {
+      <section class="card chart-card span2">
+        <h2>Leads over time</h2>
+        <app-chart [options]="options" height="280px" />
+      </section>
+    }
+    @if (countryChart(); as options) {
+      <section class="card chart-card">
+        <h2>Top countries</h2>
+        <app-chart [options]="options" height="280px" />
+      </section>
+    }
+    @if (channelChart(); as options) {
+      <section class="card chart-card span2">
+        <h2>Channel performance</h2>
+        <app-chart [options]="options" height="280px" />
+      </section>
+    }
+    @if (auth.isAdmin() && leaderboard().length > 0) {
+      <section class="card chart-card">
+        <h2>Team leaderboard</h2>
+        <ol class="leaderboard">
+          @for (row of leaderboard(); track row.userId; let i = $index) {
+            <li>
+              <span class="rank">{{ i + 1 }}</span>
+              <span class="name">{{ row.name }}</span>
+              <span class="stats">{{ row.students }} students · {{ row.totalLeads }} leads</span>
+            </li>
+          }
+        </ol>
+      </section>
+    }
+  </div>
 </main>

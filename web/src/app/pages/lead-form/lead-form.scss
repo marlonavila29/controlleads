@@ -1,0 +1,127 @@
+.content {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--cl-space-5) var(--cl-space-4);
+  display: grid;
+  gap: var(--cl-space-4);
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  h1 {
+    margin: 0;
+    font-size: var(--cl-font-size-xl);
+    font-weight: var(--cl-font-weight-bold);
+  }
+
+  a {
+    color: var(--cl-color-neutral-600);
+    text-decoration: none;
+    font-size: var(--cl-font-size-sm);
+
+    &:hover {
+      color: var(--cl-color-brand-primary);
+    }
+  }
+}
+
+.card {
+  background: var(--cl-color-neutral-0);
+  border-radius: var(--cl-radius-lg);
+  box-shadow: var(--cl-elevation-card);
+  padding: var(--cl-space-5);
+  display: grid;
+  gap: var(--cl-space-4);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--cl-space-3);
+}
+
+.span2 {
+  grid-column: span 2;
+}
+
+label {
+  display: grid;
+  gap: var(--cl-space-1);
+
+  span {
+    font-size: var(--cl-font-size-xs);
+    font-weight: var(--cl-font-weight-medium);
+    color: var(--cl-color-neutral-600);
+  }
+}
+
+input,
+select {
+  padding: var(--cl-space-2) var(--cl-space-3);
+  border: 1px solid var(--cl-color-neutral-200);
+  border-radius: var(--cl-radius-md);
+  font: inherit;
+  font-size: var(--cl-font-size-sm);
+
+  &:focus {
+    outline: none;
+    border-color: var(--cl-color-brand-primary);
+  }
+
+  &.ng-invalid.ng-touched {
+    border-color: var(--cl-color-semantic-danger);
+  }
+}
+
+.upper {
+  text-transform: uppercase;
+}
+
+.warning {
+  padding: var(--cl-space-3);
+  border-radius: var(--cl-radius-md);
+  background: #fffbeb;
+  color: #92400e;
+  font-size: var(--cl-font-size-sm);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cl-space-2);
+
+  a {
+    color: var(--cl-color-brand-primary);
+    font-weight: var(--cl-font-weight-medium);
+  }
+}
+
+.error {
+  margin: 0;
+  color: var(--cl-color-semantic-danger);
+  font-size: var(--cl-font-size-sm);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+
+  button {
+    padding: var(--cl-space-2) var(--cl-space-5);
+    border: none;
+    border-radius: var(--cl-radius-md);
+    background: var(--cl-color-brand-primary);
+    color: var(--cl-color-neutral-0);
+    font: inherit;
+    font-weight: var(--cl-font-weight-semibold);
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: var(--cl-color-brand-primary-hover);
+    }
+
+    &:disabled {
+      opacity: 0.7;
+    }
+  }
+}

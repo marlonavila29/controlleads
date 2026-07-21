@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'auth/auth_service.dart';
 import 'auth/login_screen.dart';
-import 'home/home_screen.dart';
+import 'leads/leads_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -21,7 +21,7 @@ class ControlLeadsApp extends StatelessWidget {
       home: ListenableBuilder(
         listenable: AuthService.instance,
         builder: (context, _) => AuthService.instance.isAuthenticated
-            ? const HomeScreen()
+            ? const LeadsScreen()
             : const LoginScreen(),
       ),
     );
