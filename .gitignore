@@ -1,0 +1,23 @@
+# Dependencies / builds
+node_modules/
+dist/
+build/
+target/
+.dart_tool/
+.gradle/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Env & secrets
+.env
+.env.*
+*.local.json
+
+# OS
+.DS_Store
+
+# Logs
+*.log
