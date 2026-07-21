@@ -171,14 +171,21 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
               const Text('Why did this lead stop?',
                   style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: ClTokens.space3),
-              for (final reason in reasons)
-                RadioListTile<String>(
-                  dense: true,
-                  title: Text(reason.name),
-                  value: reason.id,
-                  groupValue: selected,
-                  onChanged: (v) => setSheetState(() => selected = v),
+              RadioGroup<String>(
+                groupValue: selected,
+                onChanged: (v) => setSheetState(() => selected = v),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final reason in reasons)
+                      RadioListTile<String>(
+                        dense: true,
+                        title: Text(reason.name),
+                        value: reason.id,
+                      ),
+                  ],
                 ),
+              ),
               TextField(
                 controller: noteController,
                 decoration: const InputDecoration(labelText: 'Optional note'),

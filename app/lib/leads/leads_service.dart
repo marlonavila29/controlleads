@@ -121,7 +121,7 @@ class LeadsService {
   Future<List<Lead>> list({String? status, String? q}) async {
     final data = await ApiClient.instance.get('/api/leads', {
       'size': '100',
-      if (status != null) 'status': status,
+      'status': ?status,
       if (q != null && q.isNotEmpty) 'q': q,
     }) as Map<String, dynamic>;
     return (data['content'] as List<dynamic>)
@@ -155,7 +155,7 @@ class LeadsService {
     await ApiClient.instance.post('/api/leads/$leadId/activities', {
       'type': type,
       'content': content,
-      if (dueAt != null) 'dueAt': dueAt,
+      'dueAt': ?dueAt,
     });
   }
 
@@ -167,7 +167,7 @@ class LeadsService {
       {String? stallReasonId, String? note}) async {
     final data = await ApiClient.instance.post('/api/leads/$id/transition', {
       'toStatus': toStatus,
-      if (stallReasonId != null) 'stallReasonId': stallReasonId,
+      'stallReasonId': ?stallReasonId,
       if (note != null && note.isNotEmpty) 'note': note,
     });
     return Lead(data as Map<String, dynamic>);
