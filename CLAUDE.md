@@ -41,12 +41,10 @@ shared/
 
 ## Current state / next steps
 
-Done: discovery complete (`.spec/discovery/`), monorepo skeleton, V1 schema, design tokens.
-Next (roadmap Fase 0, in order):
-1. Scaffold Spring Boot in `backend/` (start.spring.io: web, data-jpa, security, validation, flyway, postgresql, actuator, springdoc) — keep existing `db/migration/V1__initial_schema.sql`.
-2. Scaffold Angular in `web/` (`ng new` — standalone, signals, SCSS) and Flutter in `app/`.
-3. Contract pipeline: springdoc → `shared/api-contract/openapi.yaml` → openapi-generator (typescript-angular + dart-dio), one dummy endpoint consumed by both clients.
-4. Style Dictionary build: tokens.json → SCSS vars + Flutter theme file.
-5. docker-compose (PostgreSQL 16+, needs `pgcrypto`/`gen_random_uuid`), CI (lint+test+contract), then Fase 1a (Auth — SPEC-001..003 in roadmap.md).
+**Fase 0 DONE** (all verified locally): discovery in `.spec/discovery/`; Spring Boot 4.1/Java 25 backend (Flyway V1 applied, tests green via Testcontainers); Angular 22 web (build+tests green, consumes `/api/ping` through proxy); Flutter app (analyze+test green, tokens-based theme); tokens build (`node shared/design-tokens/build.mjs`); contract pipeline validated end to end (`./scripts/sync-api-contract.sh` → openapi.yaml → TS + Dart clients); docker-compose; GitHub Actions CI.
+
+**Environment quirks (this machine)**: Docker via Colima — Testcontainers socket override already set in `backend/pom.xml`. Host ports 5432/5433 and 8080–8083 are taken by other projects → Postgres runs on **5434**, backend on **8090**. Don't "fix" these back.
+
+**Next: Fase 1a — Auth & Users** (SPEC-001..003 in `.spec/discovery/roadmap.md`, requirements in `module_auth.md`): JWT + refresh, role enforcement, admin user management, login screens on both clients. Then Fase 1b (Catalogs + Leads/Pipeline).
 
 Open decisions (small, decide in specs): activity edit window; email digest vs immediate; lead auto-assignment for Fase 2 public capture.
