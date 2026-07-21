@@ -1,0 +1,63 @@
+// GENERATED from shared/design-tokens/tokens.json — do not edit by hand.
+// Rebuild: node shared/design-tokens/build.mjs
+
+:root {
+  --cl-color-brand-primary: #4F46E5;
+  --cl-color-brand-primary-hover: #4338CA;
+  --cl-color-brand-primary-soft: #EEF2FF;
+  --cl-color-brand-accent: #0EA5E9;
+  --cl-color-status-lead: #64748B;
+  --cl-color-status-hot-lead: #F59E0B;
+  --cl-color-status-application: #0EA5E9;
+  --cl-color-status-student: #10B981;
+  --cl-color-status-stalled: #EF4444;
+  --cl-color-semantic-success: #10B981;
+  --cl-color-semantic-warning: #F59E0B;
+  --cl-color-semantic-danger: #EF4444;
+  --cl-color-semantic-info: #0EA5E9;
+  --cl-color-neutral-0: #FFFFFF;
+  --cl-color-neutral-50: #F8FAFC;
+  --cl-color-neutral-100: #F1F5F9;
+  --cl-color-neutral-200: #E2E8F0;
+  --cl-color-neutral-400: #94A3B8;
+  --cl-color-neutral-600: #475569;
+  --cl-color-neutral-800: #1E293B;
+  --cl-color-neutral-900: #0F172A;
+  --cl-color-chart-1: #4F46E5;
+  --cl-color-chart-2: #0EA5E9;
+  --cl-color-chart-3: #10B981;
+  --cl-color-chart-4: #F59E0B;
+  --cl-color-chart-5: #EC4899;
+  --cl-color-chart-6: #8B5CF6;
+  --cl-color-chart-7: #14B8A6;
+  --cl-color-chart-8: #F97316;
+  --cl-font-family-base: Inter, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --cl-font-family-flutter: Inter;
+  --cl-font-size-xs: 12px;
+  --cl-font-size-sm: 14px;
+  --cl-font-size-md: 16px;
+  --cl-font-size-lg: 18px;
+  --cl-font-size-xl: 24px;
+  --cl-font-size-display: 32px;
+  --cl-font-weight-regular: 400;
+  --cl-font-weight-medium: 500;
+  --cl-font-weight-semibold: 600;
+  --cl-font-weight-bold: 700;
+  --cl-space-1: 4px;
+  --cl-space-2: 8px;
+  --cl-space-3: 12px;
+  --cl-space-4: 16px;
+  --cl-space-5: 24px;
+  --cl-space-6: 32px;
+  --cl-space-7: 48px;
+  --cl-radius-sm: 6px;
+  --cl-radius-md: 10px;
+  --cl-radius-lg: 16px;
+  --cl-radius-full: 999px;
+  --cl-elevation-card: 0 1px 3px rgba(15, 23, 42, 0.08);
+  --cl-elevation-raised: 0 4px 12px rgba(15, 23, 42, 0.12);
+  --cl-motion-duration-fast: 150ms;
+  --cl-motion-duration-base: 250ms;
+  --cl-motion-duration-chart: 800ms;
+  --cl-motion-easing: cubic-bezier(0.4, 0, 0.2, 1);
+}

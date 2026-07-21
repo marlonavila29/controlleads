@@ -1,0 +1,19 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: controlleads
+      POSTGRES_USER: controlleads
+      POSTGRES_PASSWORD: controlleads
+    ports:
+      - "5434:5432"   # non-default host port — 5432/5433 already taken on dev machines
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U controlleads"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

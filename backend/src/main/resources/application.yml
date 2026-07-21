@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: controlleads
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5434}/${DB_NAME:controlleads}
+    username: ${DB_USER:controlleads}
+    password: ${DB_PASSWORD:controlleads}
+  jpa:
+    hibernate:
+      ddl-auto: validate   # Flyway owns the schema
+    open-in-view: false
+  flyway:
+    enabled: true
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+server:
+  port: 8090   # non-default — 8080/8081 already taken by other local services

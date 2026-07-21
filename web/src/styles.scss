@@ -1,0 +1,14 @@
+/* Global styles — design tokens come from shared/design-tokens (generated). */
+@use 'styles/tokens';
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--cl-font-family-base);
+  font-size: var(--cl-font-size-md);
+  color: var(--cl-color-neutral-900);
+  background: var(--cl-color-neutral-50);
+}

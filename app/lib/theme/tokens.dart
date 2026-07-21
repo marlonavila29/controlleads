@@ -1,0 +1,64 @@
+// GENERATED from shared/design-tokens/tokens.json — do not edit by hand.
+// Rebuild: node shared/design-tokens/build.mjs
+import 'package:flutter/material.dart';
+
+abstract final class ClTokens {
+  static const Color colorBrandPrimary = Color(0xFF4F46E5);
+  static const Color colorBrandPrimaryHover = Color(0xFF4338CA);
+  static const Color colorBrandPrimarySoft = Color(0xFFEEF2FF);
+  static const Color colorBrandAccent = Color(0xFF0EA5E9);
+  static const Color colorStatusLead = Color(0xFF64748B);
+  static const Color colorStatusHotLead = Color(0xFFF59E0B);
+  static const Color colorStatusApplication = Color(0xFF0EA5E9);
+  static const Color colorStatusStudent = Color(0xFF10B981);
+  static const Color colorStatusStalled = Color(0xFFEF4444);
+  static const Color colorSemanticSuccess = Color(0xFF10B981);
+  static const Color colorSemanticWarning = Color(0xFFF59E0B);
+  static const Color colorSemanticDanger = Color(0xFFEF4444);
+  static const Color colorSemanticInfo = Color(0xFF0EA5E9);
+  static const Color colorNeutral0 = Color(0xFFFFFFFF);
+  static const Color colorNeutral50 = Color(0xFFF8FAFC);
+  static const Color colorNeutral100 = Color(0xFFF1F5F9);
+  static const Color colorNeutral200 = Color(0xFFE2E8F0);
+  static const Color colorNeutral400 = Color(0xFF94A3B8);
+  static const Color colorNeutral600 = Color(0xFF475569);
+  static const Color colorNeutral800 = Color(0xFF1E293B);
+  static const Color colorNeutral900 = Color(0xFF0F172A);
+  static const Color colorChart1 = Color(0xFF4F46E5);
+  static const Color colorChart2 = Color(0xFF0EA5E9);
+  static const Color colorChart3 = Color(0xFF10B981);
+  static const Color colorChart4 = Color(0xFFF59E0B);
+  static const Color colorChart5 = Color(0xFFEC4899);
+  static const Color colorChart6 = Color(0xFF8B5CF6);
+  static const Color colorChart7 = Color(0xFF14B8A6);
+  static const Color colorChart8 = Color(0xFFF97316);
+  static const String fontFamilyBase = "Inter, -apple-system, 'Segoe UI', Roboto, sans-serif";
+  static const String fontFamilyFlutter = "Inter";
+  static const double fontSizeXs = 12;
+  static const double fontSizeSm = 14;
+  static const double fontSizeMd = 16;
+  static const double fontSizeLg = 18;
+  static const double fontSizeXl = 24;
+  static const double fontSizeDisplay = 32;
+  static const double fontWeightRegular = 400;
+  static const double fontWeightMedium = 500;
+  static const double fontWeightSemibold = 600;
+  static const double fontWeightBold = 700;
+  static const double space1 = 4;
+  static const double space2 = 8;
+  static const double space3 = 12;
+  static const double space4 = 16;
+  static const double space5 = 24;
+  static const double space6 = 32;
+  static const double space7 = 48;
+  static const double radiusSm = 6;
+  static const double radiusMd = 10;
+  static const double radiusLg = 16;
+  static const double radiusFull = 999;
+  static const String elevationCard = "0 1px 3px rgba(15, 23, 42, 0.08)";
+  static const String elevationRaised = "0 4px 12px rgba(15, 23, 42, 0.12)";
+  static const Duration motionDurationFast = Duration(milliseconds: 150);
+  static const Duration motionDurationBase = Duration(milliseconds: 250);
+  static const Duration motionDurationChart = Duration(milliseconds: 800);
+  static const String motionEasing = "cubic-bezier(0.4, 0, 0.2, 1)";
+}

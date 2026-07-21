@@ -1,0 +1,14 @@
+<main class="shell">
+  <h1>{{ title() }}</h1>
+  <p class="subtitle">Lead management for international student recruitment</p>
+
+  @if (ping(); as p) {
+    <span class="chip chip--ok">API {{ p.status }} · {{ p.serverTime }}</span>
+  } @else if (pingError()) {
+    <span class="chip chip--down">API unreachable — is the backend running?</span>
+  } @else {
+    <span class="chip">Checking API…</span>
+  }
+</main>
+
+<router-outlet />

@@ -21,3 +21,9 @@ target/
 
 # Logs
 *.log
+
+# Generated API clients (rebuild via scripts/sync-api-contract.sh;
+# the committed source of truth is shared/api-contract/openapi.yaml)
+web/src/app/core/api/generated/
+app/packages/api_client/
+openapitools.json
