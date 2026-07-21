@@ -10,7 +10,7 @@ paths:
     get:
       tags:
       - users
-      summary: List all team members (admin only)
+      summary: List all team members with their active-lead counts (admin only)
       operationId: list
       responses:
         "200":
@@ -20,7 +20,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/UserDto"
+                  $ref: "#/components/schemas/TeamMemberDto"
     post:
       tags:
       - users
@@ -39,6 +39,33 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/UserDto"
+  /api/users/{id}/reassign-leads:
+    post:
+      tags:
+      - users
+      summary: Reassign all of a user's active leads to another user (admin only;
+        RN-02)
+      operationId: reassignLeads
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReassignLeadsRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ReassignResultDto"
   /api/stall-reasons:
     get:
       tags:
@@ -658,6 +685,71 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/UserDto"
+  /api/leads/export.csv:
+    get:
+      tags:
+      - leads
+      summary: Export the filtered leads as CSV (same scope/filters as the list)
+      operationId: exportCsv
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - LEAD
+          - HOT_LEAD
+          - APPLICATION
+          - STUDENT
+          - STALLED
+      - name: countryCode
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: courseId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: channelId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: assignedTo
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: createdFrom
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: createdTo
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      responses:
+        "200":
+          description: OK
+          content:
+            text/csv:
+              schema:
+                type: string
   /api/leads/duplicates:
     get:
       tags:
@@ -765,6 +857,19 @@ paths:
       - analytics
       summary: Conversion funnel — distinct leads that ever reached each stage
       operationId: funnel
+      parameters:
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
       responses:
         "200":
           description: OK
@@ -780,6 +885,19 @@ paths:
       - analytics
       summary: Drop-off — where and why leads stalled
       operationId: dropOff
+      parameters:
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
       responses:
         "200":
           description: OK
@@ -795,6 +913,19 @@ paths:
       - analytics
       summary: Volume and conversion by course
       operationId: byCourse
+      parameters:
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
       responses:
         "200":
           description: OK
@@ -810,6 +941,19 @@ paths:
       - analytics
       summary: Volume and conversion by country of origin
       operationId: byCountry
+      parameters:
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
       responses:
         "200":
           description: OK
@@ -825,6 +969,19 @@ paths:
       - analytics
       summary: Volume and conversion by channel
       operationId: byChannel
+      parameters:
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
       responses:
         "200":
           description: OK
@@ -880,6 +1037,20 @@ components:
         createdAt:
           type: string
           format: date-time
+    ReassignLeadsRequest:
+      type: object
+      properties:
+        toUserId:
+          type: string
+          format: uuid
+      required:
+      - toUserId
+    ReassignResultDto:
+      type: object
+      properties:
+        reassigned:
+          type: integer
+          format: int32
     CreateCatalogRequest:
       type: object
       properties:
@@ -1166,6 +1337,29 @@ components:
         assignedTo:
           type: string
           format: uuid
+    TeamMemberDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum:
+          - ADMINISTRATOR
+          - MARKETING_TEAM
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        leadCount:
+          type: integer
+          format: int64
     PingResponse:
       type: object
       properties:

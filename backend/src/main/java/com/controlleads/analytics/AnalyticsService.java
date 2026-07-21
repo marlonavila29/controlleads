@@ -85,15 +85,17 @@ public class AnalyticsService {
 
     // ---- funnel (event-derived, ever reached) --------------------------------
 
-    public List<FunnelStage> funnel(CurrentUser caller) {
+    public List<FunnelStage> funnel(CurrentUser caller, LocalDate from, LocalDate to) {
+        MapSqlParameterSource params = base(caller);
+        String cohort = cohort(from, to, params);
         Map<String, Long> counts = new LinkedHashMap<>();
         jdbc.query("""
             SELECT e.to_status AS status, count(DISTINCT e.lead_id) AS c
             FROM lead_status_events e
             JOIN leads l ON l.id = e.lead_id
             WHERE l.deleted_at IS NULL
-              AND e.to_status IN ('LEAD','HOT_LEAD','APPLICATION','STUDENT')""" + scope(caller)
-            + " GROUP BY e.to_status", base(caller),
+              AND e.to_status IN ('LEAD','HOT_LEAD','APPLICATION','STUDENT')""" + scope(caller) + cohort
+            + " GROUP BY e.to_status", params,
             rs -> { counts.put(rs.getString("status"), rs.getLong("c")); });
 
         return FUNNEL_ORDER.stream()
@@ -103,7 +105,9 @@ public class AnalyticsService {
 
     // ---- drop-off ------------------------------------------------------------
 
-    public List<DropOffRow> dropOff(CurrentUser caller) {
+    public List<DropOffRow> dropOff(CurrentUser caller, LocalDate from, LocalDate to) {
+        MapSqlParameterSource params = base(caller);
+        String cohort = cohort(from, to, params);
         // count(DISTINCT lead_id) so a lead that stalled, was revived, then
         // stalled again at the same stage/reason still counts once — consistent
         // with every other distinct-lead metric in this service.
@@ -113,9 +117,9 @@ public class AnalyticsService {
             FROM lead_status_events e
             JOIN leads l ON l.id = e.lead_id
             LEFT JOIN stall_reasons sr ON sr.id = e.stall_reason_id
-            WHERE l.deleted_at IS NULL AND e.to_status = 'STALLED'""" + scope(caller)
+            WHERE l.deleted_at IS NULL AND e.to_status = 'STALLED'""" + scope(caller) + cohort
             + " GROUP BY e.from_status, e.stall_reason_id, sr.name ORDER BY c DESC",
-            base(caller),
+            params,
             (rs, i) -> new DropOffRow(rs.getString("stage"),
                 rs.getObject("reason_id", UUID.class),
                 rs.getString("reason_name") == null ? "Unspecified" : rs.getString("reason_name"),
@@ -167,10 +171,13 @@ public class AnalyticsService {
 
     // ---- breakdowns ----------------------------------------------------------
 
-    public List<BreakdownRow> breakdown(CurrentUser caller, String table, String column) {
+    public List<BreakdownRow> breakdown(CurrentUser caller, String table, String column,
+                                        LocalDate from, LocalDate to) {
         if (!BREAKDOWN_COLUMNS.getOrDefault(table, "").equals(column)) {
             throw new IllegalArgumentException("Unsupported breakdown: " + table);
         }
+        MapSqlParameterSource params = base(caller);
+        String cohort = cohort(from, to, params);
         String sql = ("""
             SELECT cat.id AS id, cat.name AS name,
                    count(l.id) AS total,
@@ -179,14 +186,16 @@ public class AnalyticsService {
             JOIN %s cat ON cat.id = l.%s
             LEFT JOIN (SELECT DISTINCT lead_id FROM lead_status_events WHERE to_status = 'STUDENT') s
                    ON s.lead_id = l.id
-            WHERE l.deleted_at IS NULL""").formatted(table, column) + scope(caller)
+            WHERE l.deleted_at IS NULL""").formatted(table, column) + scope(caller) + cohort
             + " GROUP BY cat.id, cat.name ORDER BY total DESC";
-        return jdbc.query(sql, base(caller),
+        return jdbc.query(sql, params,
             (rs, i) -> new BreakdownRow(rs.getObject("id", UUID.class), rs.getString("name"),
                 rs.getLong("total"), rs.getLong("students")));
     }
 
-    public List<CountryRow> byCountry(CurrentUser caller) {
+    public List<CountryRow> byCountry(CurrentUser caller, LocalDate from, LocalDate to) {
+        MapSqlParameterSource params = base(caller);
+        String cohort = cohort(from, to, params);
         return jdbc.query("""
             SELECT l.country_code AS country_code,
                    count(*) AS total,
@@ -194,9 +203,9 @@ public class AnalyticsService {
             FROM leads l
             LEFT JOIN (SELECT DISTINCT lead_id FROM lead_status_events WHERE to_status = 'STUDENT') s
                    ON s.lead_id = l.id
-            WHERE l.deleted_at IS NULL""" + scope(caller)
+            WHERE l.deleted_at IS NULL""" + scope(caller) + cohort
             + " GROUP BY l.country_code ORDER BY total DESC",
-            base(caller),
+            params,
             (rs, i) -> new CountryRow(rs.getString("country_code"),
                 rs.getLong("total"), rs.getLong("students")));
     }
@@ -228,6 +237,20 @@ public class AnalyticsService {
 
     private MapSqlParameterSource base(CurrentUser caller) {
         return new MapSqlParameterSource("userId", caller.id());
+    }
+
+    /** Optional cohort filter on lead.created_at (leads alias must be `l`). */
+    private String cohort(LocalDate from, LocalDate to, MapSqlParameterSource params) {
+        StringBuilder sb = new StringBuilder();
+        if (from != null) {
+            sb.append(" AND l.created_at >= :cohortFrom");
+            params.addValue("cohortFrom", from.atStartOfDay().atOffset(ZoneOffset.UTC));
+        }
+        if (to != null) {
+            sb.append(" AND l.created_at < :cohortTo");
+            params.addValue("cohortTo", to.plusDays(1).atStartOfDay().atOffset(ZoneOffset.UTC));
+        }
+        return sb.toString();
     }
 
     private long count(String sql, MapSqlParameterSource params) {

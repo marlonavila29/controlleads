@@ -1,5 +1,9 @@
 package com.controlleads.leads;
 
+import com.controlleads.catalogs.Channel;
+import com.controlleads.catalogs.ChannelRepository;
+import com.controlleads.catalogs.Course;
+import com.controlleads.catalogs.CourseRepository;
 import com.controlleads.common.CurrentUser;
 import com.controlleads.users.User;
 import com.controlleads.users.UserRepository;
@@ -24,7 +28,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -73,13 +79,18 @@ public class LeadController {
     private final LeadRepository leads;
     private final LeadStatusEventRepository statusEvents;
     private final UserRepository users;
+    private final CourseRepository courses;
+    private final ChannelRepository channels;
 
     public LeadController(LeadService leadService, LeadRepository leads,
-                          LeadStatusEventRepository statusEvents, UserRepository users) {
+                          LeadStatusEventRepository statusEvents, UserRepository users,
+                          CourseRepository courses, ChannelRepository channels) {
         this.leadService = leadService;
         this.leads = leads;
         this.statusEvents = statusEvents;
         this.users = users;
+        this.courses = courses;
+        this.channels = channels;
     }
 
     @Operation(summary = "Create a lead (owner defaults to the caller; admins may assign)")
@@ -138,8 +149,63 @@ public class LeadController {
                             @RequestParam(defaultValue = "0") int page,
                             @RequestParam(defaultValue = "25") int size) {
         CurrentUser caller = CurrentUser.from(jwt);
+        Specification<Lead> spec = buildSpec(caller, status, countryCode, courseId, channelId,
+            assignedTo, q, createdFrom, createdTo);
 
-        Specification<Lead> spec = (root, query, cb) -> {
+        Page<Lead> result = leads.findAll(spec,
+            PageRequest.of(page, Math.min(size, 100), Sort.by(Sort.Direction.DESC, "createdAt")));
+        Map<UUID, String> names = userNames(result.map(Lead::getAssignedTo).toList());
+        return new LeadPageDto(result.map(l -> toDto(l, names)).getContent(),
+            result.getTotalElements(), result.getTotalPages(), result.getNumber());
+    }
+
+    @Operation(summary = "Export the filtered leads as CSV (same scope/filters as the list)")
+    @GetMapping(value = "/api/leads/export.csv", produces = "text/csv")
+    public ResponseEntity<String> exportCsv(@AuthenticationPrincipal Jwt jwt,
+                                            @RequestParam(required = false) LeadStatus status,
+                                            @RequestParam(required = false) String countryCode,
+                                            @RequestParam(required = false) UUID courseId,
+                                            @RequestParam(required = false) UUID channelId,
+                                            @RequestParam(required = false) UUID assignedTo,
+                                            @RequestParam(required = false) String q,
+                                            @RequestParam(required = false) LocalDate createdFrom,
+                                            @RequestParam(required = false) LocalDate createdTo) {
+        CurrentUser caller = CurrentUser.from(jwt);
+        Specification<Lead> spec = buildSpec(caller, status, countryCode, courseId, channelId,
+            assignedTo, q, createdFrom, createdTo);
+        // Cap the export so a huge table can't exhaust memory.
+        List<Lead> rows = leads.findAll(spec,
+            PageRequest.of(0, 50_000, Sort.by(Sort.Direction.DESC, "createdAt"))).getContent();
+
+        Map<UUID, String> owners = userNames(rows.stream().map(Lead::getAssignedTo).toList());
+        Map<UUID, String> courseNames = courses.findAll().stream()
+            .collect(Collectors.toMap(Course::getId, Course::getName));
+        Map<UUID, String> channelNames = channels.findAll().stream()
+            .collect(Collectors.toMap(Channel::getId, Channel::getName));
+
+        StringBuilder csv = new StringBuilder(
+            "Name,Country,Email,Phone,Course,Channel,Status,Owner,UTM Source,UTM Medium,UTM Campaign,Created,Last Contacted\n");
+        for (Lead l : rows) {
+            csv.append(String.join(",",
+                csvCell(l.getFullName()), csvCell(l.getCountryCode()), csvCell(l.getEmail()),
+                csvCell(l.getPhone()), csvCell(courseNames.get(l.getCourseId())),
+                csvCell(channelNames.get(l.getChannelId())), csvCell(l.getStatus().name()),
+                csvCell(owners.get(l.getAssignedTo())), csvCell(l.getUtmSource()),
+                csvCell(l.getUtmMedium()), csvCell(l.getUtmCampaign()),
+                csvCell(String.valueOf(l.getCreatedAt())),
+                csvCell(l.getLastContactedAt() == null ? "" : String.valueOf(l.getLastContactedAt()))))
+               .append("\n");
+        }
+
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"leads.csv\"")
+            .body(csv.toString());
+    }
+
+    private Specification<Lead> buildSpec(CurrentUser caller, LeadStatus status, String countryCode,
+                                          UUID courseId, UUID channelId, UUID assignedTo, String q,
+                                          LocalDate createdFrom, LocalDate createdTo) {
+        return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.isNull(root.get("deletedAt")));
             if (!caller.isAdmin()) {
@@ -168,12 +234,21 @@ public class LeadController {
             }
             return cb.and(predicates.toArray(Predicate[]::new));
         };
+    }
 
-        Page<Lead> result = leads.findAll(spec,
-            PageRequest.of(page, Math.min(size, 100), Sort.by(Sort.Direction.DESC, "createdAt")));
-        Map<UUID, String> names = userNames(result.map(Lead::getAssignedTo).toList());
-        return new LeadPageDto(result.map(l -> toDto(l, names)).getContent(),
-            result.getTotalElements(), result.getTotalPages(), result.getNumber());
+    /**
+     * RFC 4180 cell that also defuses spreadsheet formula injection: a value
+     * starting with = + - @ \t \r is prefixed with a single quote so Excel/Sheets
+     * treat it as text, not a formula, then quoted with embedded quotes doubled.
+     */
+    private static String csvCell(String value) {
+        if (value == null || value.isEmpty()) return "\"\"";
+        String safe = value;
+        char first = safe.charAt(0);
+        if (first == '=' || first == '+' || first == '-' || first == '@' || first == '\t' || first == '\r') {
+            safe = "'" + safe;
+        }
+        return "\"" + safe.replace("\"", "\"\"") + "\"";
     }
 
     @Operation(summary = "Possible duplicates by email/phone — warn, don't block (RN-04)")

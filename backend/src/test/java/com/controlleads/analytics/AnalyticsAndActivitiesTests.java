@@ -209,6 +209,32 @@ class AnalyticsAndActivitiesTests {
 		assertThat(converted).isEqualTo(1);
 	}
 
+	@Test
+	void funnelRespectsPeriodFilter() throws Exception {
+		// A future cohort start excludes every (now-created) lead.
+		for (JsonNode stage : apiGet("/api/analytics/funnel?from=2999-01-01", mariaToken)) {
+			assertThat(stage.get("count").asLong()).isZero();
+		}
+		// A past cohort start includes them all, same as no filter.
+		Map<String, Long> counts = new HashMap<>();
+		for (JsonNode stage : apiGet("/api/analytics/funnel?from=2000-01-01", mariaToken)) {
+			counts.put(stage.get("status").asText(), stage.get("count").asLong());
+		}
+		assertThat(counts.get("LEAD")).isEqualTo(3);
+	}
+
+	@Test
+	void csvExportContainsScopedLeads() throws Exception {
+		String csv = mvc.perform(get("/api/leads/export.csv")
+				.header(HttpHeaders.AUTHORIZATION, "Bearer " + mariaToken))
+			.andExpect(status().isOk())
+			.andReturn().getResponse().getContentAsString();
+
+		assertThat(csv).startsWith("Name,Country,Email");
+		assertThat(csv).contains("Nguyen Van An"); // Maria's lead A
+		assertThat(csv).doesNotContain("Isha Rao");  // Joao's lead C — out of scope
+	}
+
 	// ---- helpers -------------------------------------------------------------
 
 	private String createLead(String token, String name, String country, String email) throws Exception {

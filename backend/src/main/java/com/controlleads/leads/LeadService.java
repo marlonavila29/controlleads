@@ -9,6 +9,7 @@ import com.controlleads.leads.LeadController.CreateLeadRequest;
 import com.controlleads.leads.LeadController.TransitionRequest;
 import com.controlleads.leads.LeadController.UpdateLeadRequest;
 import com.controlleads.users.UserRepository;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -101,6 +102,25 @@ public class LeadService {
             lead.setAssignedTo(request.assignedTo());
         }
         return lead;
+    }
+
+    /**
+     * Reassign every active lead of one user to another (module_auth.md RN-02),
+     * e.g. when deactivating a team member. Each move is an audited assignment
+     * event. Admin-only (enforced at the controller).
+     */
+    @Transactional
+    public int reassignAll(UUID fromUserId, UUID toUserId, CurrentUser admin) {
+        if (fromUserId.equals(toUserId)) {
+            throw ApiException.badRequest("Pick a different user to receive the leads");
+        }
+        requireActiveUser(toUserId);
+        List<Lead> owned = leads.findByAssignedToAndDeletedAtIsNull(fromUserId);
+        for (Lead lead : owned) {
+            assignmentEvents.save(new LeadAssignmentEvent(lead.getId(), fromUserId, toUserId, admin.id()));
+            lead.setAssignedTo(toUserId);
+        }
+        return owned.size();
     }
 
     /**

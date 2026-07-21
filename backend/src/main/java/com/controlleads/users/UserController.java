@@ -1,6 +1,9 @@
 package com.controlleads.users;
 
 import com.controlleads.common.ApiException;
+import com.controlleads.common.CurrentUser;
+import com.controlleads.leads.LeadRepository;
+import com.controlleads.leads.LeadService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -36,27 +39,49 @@ public class UserController {
         }
     }
 
+    public record TeamMemberDto(UUID id, String name, String email, UserRole role, boolean active,
+                                Instant createdAt, long leadCount) {}
+
     public record CreateUserRequest(@NotBlank String name, @NotBlank @Email String email,
                                     @NotBlank @Size(min = 8) String password, @NotNull UserRole role) {}
     public record UpdateUserRequest(String name, UserRole role, Boolean active) {}
     public record ChangePasswordRequest(@NotBlank String currentPassword,
                                         @NotBlank @Size(min = 8) String newPassword) {}
+    public record ReassignLeadsRequest(@NotNull UUID toUserId) {}
+    public record ReassignResultDto(int reassigned) {}
 
     private final UserRepository users;
     private final PasswordEncoder passwordEncoder;
+    private final LeadRepository leads;
+    private final LeadService leadService;
 
-    public UserController(UserRepository users, PasswordEncoder passwordEncoder) {
+    public UserController(UserRepository users, PasswordEncoder passwordEncoder,
+                          LeadRepository leads, LeadService leadService) {
         this.users = users;
         this.passwordEncoder = passwordEncoder;
+        this.leads = leads;
+        this.leadService = leadService;
     }
 
     // ----- Admin management (module_auth.md RF-02/RF-03) -----
 
-    @Operation(summary = "List all team members (admin only)")
+    @Operation(summary = "List all team members with their active-lead counts (admin only)")
     @GetMapping("/api/users")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
-    public List<UserDto> list() {
-        return users.findAll().stream().map(UserDto::from).toList();
+    public List<TeamMemberDto> list() {
+        return users.findAll().stream()
+            .map(u -> new TeamMemberDto(u.getId(), u.getName(), u.getEmail(), u.getRole(),
+                u.isActive(), u.getCreatedAt(), leads.countByAssignedToAndDeletedAtIsNull(u.getId())))
+            .toList();
+    }
+
+    @Operation(summary = "Reassign all of a user's active leads to another user (admin only; RN-02)")
+    @PostMapping("/api/users/{id}/reassign-leads")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    public ReassignResultDto reassignLeads(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id,
+                                           @Valid @RequestBody ReassignLeadsRequest request) {
+        int count = leadService.reassignAll(id, request.toUserId(), CurrentUser.from(jwt));
+        return new ReassignResultDto(count);
     }
 
     @Operation(summary = "Create a team member (admin only)")

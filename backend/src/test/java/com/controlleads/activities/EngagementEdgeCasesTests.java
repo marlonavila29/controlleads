@@ -138,7 +138,66 @@ class EngagementEdgeCasesTests {
 		apiPost("/api/activities/" + followId + "/complete", joaoToken, "{}", 200);
 	}
 
+	@Test
+	void reassignAllMovesLeadsAndUpdatesCounts() throws Exception {
+		createUser("Src Owner", "src@edge.local", "src12345678");
+		createUser("Dst Owner", "dst@edge.local", "dst12345678");
+		String srcToken = login("src@edge.local", "src12345678");
+		String dstToken = login("dst@edge.local", "dst12345678");
+		String srcId = userId("src@edge.local");
+		String dstId = userId("dst@edge.local");
+
+		createLead(srcToken, "Lead One", "US");
+		createLead(srcToken, "Lead Two", "US");
+
+		assertThat(leadCount(srcId)).isEqualTo(2);
+
+		JsonNode result = apiPost("/api/users/" + srcId + "/reassign-leads", adminToken,
+			"{\"toUserId\":\"" + dstId + "\"}", 200);
+		assertThat(result.get("reassigned").asInt()).isEqualTo(2);
+
+		assertThat(leadCount(srcId)).isZero();
+		assertThat(leadCount(dstId)).isEqualTo(2);
+
+		// The new owner can now see both leads; the old owner sees none.
+		assertThat(apiGet("/api/leads", dstToken).get("totalElements").asLong()).isEqualTo(2);
+		assertThat(apiGet("/api/leads", srcToken).get("totalElements").asLong()).isZero();
+	}
+
+	@Test
+	void csvExportNeutralizesFormulaInjection() throws Exception {
+		Map<String, Object> body = new HashMap<>();
+		body.put("fullName", "Formula Guy");
+		body.put("countryCode", "US");
+		body.put("email", "formula@x.com");
+		body.put("courseId", courseId);
+		body.put("channelId", channelId);
+		body.put("utmSource", "=HYPERLINK(\"http://evil\")");
+		apiPost("/api/leads", mariaToken, mapper.writeValueAsString(body), 201);
+
+		String csv = mvc.perform(get("/api/leads/export.csv")
+				.header(HttpHeaders.AUTHORIZATION, "Bearer " + mariaToken))
+			.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+
+		assertThat(csv).contains("'=HYPERLINK");        // neutralized: text, not a formula
+		assertThat(csv).doesNotContain("\"=HYPERLINK");  // no cell opening straight into a formula
+	}
+
 	// ---- helpers -------------------------------------------------------------
+
+	private long leadCount(String userId) throws Exception {
+		for (JsonNode u : apiGet("/api/users", adminToken)) {
+			if (u.get("id").asText().equals(userId)) return u.get("leadCount").asLong();
+		}
+		return -1;
+	}
+
+	private String userId(String email) throws Exception {
+		for (JsonNode u : apiGet("/api/users", adminToken)) {
+			if (u.get("email").asText().equals(email)) return u.get("id").asText();
+		}
+		return null;
+	}
 
 	private boolean containsActivity(JsonNode list, String activityId) {
 		for (JsonNode a : list) {

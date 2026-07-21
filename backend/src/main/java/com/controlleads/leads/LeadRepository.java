@@ -11,6 +11,8 @@ import org.springframework.data.repository.query.Param;
 public interface LeadRepository extends JpaRepository<Lead, UUID>, JpaSpecificationExecutor<Lead> {
     List<Lead> findByEmailIgnoreCaseAndDeletedAtIsNull(String email);
     List<Lead> findByPhoneAndDeletedAtIsNull(String phone);
+    List<Lead> findByAssignedToAndDeletedAtIsNull(UUID assignedTo);
+    long countByAssignedToAndDeletedAtIsNull(UUID assignedTo);
 
     /** HOT_LEADs that have gone uncontacted past the SLA threshold. */
     @Query("""
