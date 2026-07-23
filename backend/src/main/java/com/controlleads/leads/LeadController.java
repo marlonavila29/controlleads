@@ -81,16 +81,19 @@ public class LeadController {
     private final UserRepository users;
     private final CourseRepository courses;
     private final ChannelRepository channels;
+    private final com.controlleads.settings.AppSettingsService settings;
 
     public LeadController(LeadService leadService, LeadRepository leads,
                           LeadStatusEventRepository statusEvents, UserRepository users,
-                          CourseRepository courses, ChannelRepository channels) {
+                          CourseRepository courses, ChannelRepository channels,
+                          com.controlleads.settings.AppSettingsService settings) {
         this.leadService = leadService;
         this.leads = leads;
         this.statusEvents = statusEvents;
         this.users = users;
         this.courses = courses;
         this.channels = channels;
+        this.settings = settings;
     }
 
     @Operation(summary = "Create a lead (owner defaults to the caller; admins may assign)")
@@ -208,7 +211,10 @@ public class LeadController {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.isNull(root.get("deletedAt")));
-            if (!caller.isAdmin()) {
+            
+            // If shareLeadsVisibility is true, counselors can view all leads just like admins.
+            // If assignedTo query parameter is provided, filter by it.
+            if (!caller.isAdmin() && !settings.shareLeadsVisibility()) {
                 predicates.add(cb.equal(root.get("assignedTo"), caller.id()));
             } else if (assignedTo != null) {
                 predicates.add(cb.equal(root.get("assignedTo"), assignedTo));

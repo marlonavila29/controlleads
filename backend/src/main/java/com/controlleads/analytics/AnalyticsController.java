@@ -41,58 +41,65 @@ public class AnalyticsController {
     @Operation(summary = "Headline KPIs")
     @GetMapping("/api/analytics/summary")
     public Summary summary(@AuthenticationPrincipal Jwt jwt,
+                           @RequestParam(required = false) UUID assignedTo,
                            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
                            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        return analytics.summary(CurrentUser.from(jwt), from, to);
+        return analytics.summary(CurrentUser.from(jwt), assignedTo, from, to);
     }
 
     @Operation(summary = "Conversion funnel — distinct leads that ever reached each stage")
     @GetMapping("/api/analytics/funnel")
     public List<FunnelStage> funnel(@AuthenticationPrincipal Jwt jwt,
+                                    @RequestParam(required = false) UUID assignedTo,
                                     @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
                                     @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        return analytics.funnel(CurrentUser.from(jwt), from, to);
+        return analytics.funnel(CurrentUser.from(jwt), assignedTo, from, to);
     }
 
     @Operation(summary = "Drop-off — where and why leads stalled")
     @GetMapping("/api/analytics/drop-off")
     public List<DropOffRow> dropOff(@AuthenticationPrincipal Jwt jwt,
+                                    @RequestParam(required = false) UUID assignedTo,
                                     @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
                                     @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        return analytics.dropOff(CurrentUser.from(jwt), from, to);
+        return analytics.dropOff(CurrentUser.from(jwt), assignedTo, from, to);
     }
 
     @Operation(summary = "Leads created vs converted over time")
     @GetMapping("/api/analytics/timeseries")
     public List<TimePoint> timeseries(@AuthenticationPrincipal Jwt jwt,
+                                      @RequestParam(required = false) UUID assignedTo,
                                       @RequestParam(defaultValue = "week") String interval,
                                       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
                                       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        return analytics.timeseries(CurrentUser.from(jwt), interval, from, to);
+        return analytics.timeseries(CurrentUser.from(jwt), assignedTo, interval, from, to);
     }
 
     @Operation(summary = "Volume and conversion by channel")
     @GetMapping("/api/analytics/by-channel")
     public List<BreakdownRow> byChannel(@AuthenticationPrincipal Jwt jwt,
+                                        @RequestParam(required = false) UUID assignedTo,
                                         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
                                         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        return analytics.breakdown(CurrentUser.from(jwt), "channels", "channel_id", from, to);
+        return analytics.breakdown(CurrentUser.from(jwt), assignedTo, "channels", "channel_id", from, to);
     }
 
     @Operation(summary = "Volume and conversion by course")
     @GetMapping("/api/analytics/by-course")
     public List<BreakdownRow> byCourse(@AuthenticationPrincipal Jwt jwt,
+                                       @RequestParam(required = false) UUID assignedTo,
                                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
                                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        return analytics.breakdown(CurrentUser.from(jwt), "courses", "course_id", from, to);
+        return analytics.breakdown(CurrentUser.from(jwt), assignedTo, "courses", "course_id", from, to);
     }
 
     @Operation(summary = "Volume and conversion by country of origin")
     @GetMapping("/api/analytics/by-country")
     public List<CountryRow> byCountry(@AuthenticationPrincipal Jwt jwt,
+                                      @RequestParam(required = false) UUID assignedTo,
                                       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
                                       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        return analytics.byCountry(CurrentUser.from(jwt), from, to);
+        return analytics.byCountry(CurrentUser.from(jwt), assignedTo, from, to);
     }
 
     @Operation(summary = "Team leaderboard (admin only)")

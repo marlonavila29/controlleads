@@ -1,79 +1,128 @@
-<app-topbar />
+<div class="app-layout">
+  <app-sidebar />
 
-<main class="content">
-  <div class="heading">
-    <h1>New lead</h1>
-    <a routerLink="/leads">‹ Back to leads</a>
-  </div>
-
-  <form class="card" [formGroup]="form" (ngSubmit)="submit()">
-    <div class="grid">
-      <label class="span2">
-        <span>Full name *</span>
-        <input formControlName="fullName" placeholder="e.g. Nguyen Van An" />
-      </label>
-      <label>
-        <span>Country (ISO code) *</span>
-        <input formControlName="countryCode" placeholder="e.g. VN" maxlength="2" class="upper" />
-      </label>
-      <label>
-        <span>Email</span>
-        <input formControlName="email" type="email" placeholder="lead@example.com" />
-      </label>
-      <label>
-        <span>Phone</span>
-        <input formControlName="phone" placeholder="+84 912 345 678" />
-      </label>
-      <label>
-        <span>Course of interest *</span>
-        <select formControlName="courseId">
-          <option value="" disabled>Select a course…</option>
-          @for (c of catalogs.activeCourses(); track c.id) {
-            <option [value]="c.id">{{ c.name }}</option>
-          }
-        </select>
-      </label>
-      <label>
-        <span>Source channel *</span>
-        <select formControlName="channelId">
-          <option value="" disabled>Select a channel…</option>
-          @for (c of catalogs.activeChannels(); track c.id) {
-            <option [value]="c.id">{{ c.name }}</option>
-          }
-        </select>
-      </label>
-      <label>
-        <span>UTM source</span>
-        <input formControlName="utmSource" placeholder="instagram" />
-      </label>
-      <label>
-        <span>UTM medium</span>
-        <input formControlName="utmMedium" placeholder="paid_social" />
-      </label>
-      <label>
-        <span>UTM campaign</span>
-        <input formControlName="utmCampaign" placeholder="fall_intake_2026" />
-      </label>
-    </div>
-
-    @if (duplicates().length > 0) {
-      <div class="warning">
-        ⚠️ Possible duplicate{{ duplicates().length > 1 ? 's' : '' }}:
-        @for (d of duplicates(); track d.id) {
-          <a [routerLink]="['/leads', d.id]">{{ d.fullName }} ({{ d.status }}, {{ d.assignedToName }})</a>
-        }
-        — you can still save if this is a different person.
+  <main class="main-canvas">
+    <header class="canvas-header">
+      <div class="header-title">
+        <a routerLink="/leads" class="back-link">← Back to Candidates Directory</a>
+        <div class="title-row">
+          <h1>Add New Candidate Lead</h1>
+        </div>
       </div>
-    }
+    </header>
 
-    @if (error(); as message) {
-      <p class="error">{{ message }}</p>
-    }
+    <div class="canvas-content">
+      <form class="card form-card" [formGroup]="form" (ngSubmit)="submit()">
+        <h2 class="form-title">Candidate Details</h2>
 
-    <div class="actions">
-      <button type="submit" [disabled]="submitting()">
-        {{ submitting() ? 'Saving…' : 'Create lead' }}
-      </button>
+        <div class="form-grid">
+          <label class="span2">
+            <span>Full Name *</span>
+            <input formControlName="fullName" placeholder="e.g. Nguyen Van An" />
+          </label>
+
+          <label>
+            <span>Country of Origin *</span>
+            <app-country-select formControlName="countryCode" />
+          </label>
+
+          <label>
+            <span>Email Address</span>
+            <input formControlName="email" type="email" placeholder="lead@example.com" />
+          </label>
+
+          <label>
+            <span>Phone Number</span>
+            <input formControlName="phone" placeholder="+84 912 345 678" />
+          </label>
+
+          <label>
+            <span>Course of Interest *</span>
+            <app-custom-select
+              formControlName="courseId"
+              [options]="catalogs.activeCourses()"
+              placeholder="Select a course…"
+              [allowOther]="true"
+            />
+          </label>
+
+          <label>
+            <span>Source Channel *</span>
+            <app-custom-select
+              formControlName="channelId"
+              [options]="catalogs.activeChannels()"
+              placeholder="Select a channel…"
+              [allowOther]="true"
+            />
+          </label>
+
+          @if (isOtherChannel()) {
+            <label class="span2 highlight-field">
+              <span>Specify Channel / Details *</span>
+              <input
+                formControlName="otherChannelName"
+                placeholder="e.g. TikTok Ad, School Event, Radio, Referral..."
+                autofocus
+              />
+            </label>
+          }
+
+          <label>
+            <span>UTM Source</span>
+            <app-custom-select
+              formControlName="utmSource"
+              [options]="['instagram', 'facebook', 'google_ads', 'education_fair', 'referral', 'organic_social']"
+              placeholder="e.g. instagram"
+              [allowCustomText]="true"
+            />
+          </label>
+
+          <label>
+            <span>UTM Medium</span>
+            <app-custom-select
+              formControlName="utmMedium"
+              [options]="['paid_social', 'cpc', 'email', 'organic', 'direct']"
+              placeholder="e.g. paid_social"
+              [allowCustomText]="true"
+            />
+          </label>
+
+          <label class="span2">
+            <span>UTM Campaign</span>
+            <app-custom-select
+              formControlName="utmCampaign"
+              [options]="catalogs.activeCampaigns()"
+              placeholder="Select or type campaign (e.g. fall_intake_2026)…"
+              [allowCustomText]="true"
+            />
+          </label>
+        </div>
+
+        @if (duplicates().length > 0) {
+          <div class="warning-banner">
+            ⚠️ Possible duplicate candidate(s):
+            @for (d of duplicates(); track d.id) {
+              <a [routerLink]="['/leads', d.id]">{{ d.fullName }} ({{ d.status }}, {{ d.assignedToName }})</a>
+            }
+            — you may still create if this is a distinct lead.
+          </div>
+        }
+
+        @if (form.touched && form.errors?.['contactMissing']) {
+          <div class="error-banner">⚠️ Please provide at least one contact method: either an Email Address or a Phone Number.</div>
+        }
+
+        @if (error(); as message) {
+          <div class="error-banner">⚠️ {{ message }}</div>
+        }
+
+        <div class="form-actions">
+          <a routerLink="/leads" class="btn-ghost">Cancel</a>
+          <button type="submit" class="btn-primary" [disabled]="submitting()">
+            {{ submitting() ? 'Creating Candidate…' : 'Create Candidate Lead' }}
+          </button>
+        </div>
+      </form>
     </div>
-  </form>
-</main>
+  </main>
+</div>

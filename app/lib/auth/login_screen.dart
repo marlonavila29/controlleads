@@ -25,6 +25,12 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  void _quickLogin(String email, String password) {
+    _email.text = email;
+    _password.text = password;
+    _submit();
+  }
+
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false) || _submitting) return;
     setState(() {
@@ -107,6 +113,39 @@ class _LoginScreenState extends State<LoginScreen> {
                       FilledButton(
                         onPressed: _submitting ? null : _submit,
                         child: Text(_submitting ? 'Signing in…' : 'Sign in'),
+                      ),
+                      const SizedBox(height: ClTokens.space4),
+                      Row(
+                        children: [
+                          const Expanded(child: Divider()),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: ClTokens.space2),
+                            child: Text(
+                              'or quick sign-in as',
+                              style: TextStyle(
+                                fontSize: ClTokens.fontSizeXs,
+                                color: ClTokens.colorNeutral600,
+                              ),
+                            ),
+                          ),
+                          const Expanded(child: Divider()),
+                        ],
+                      ),
+                      const SizedBox(height: ClTokens.space3),
+                      OutlinedButton.icon(
+                        onPressed: _submitting
+                            ? null
+                            : () => _quickLogin('admin@controlleads.local', 'admin123'),
+                        icon: const Text('🛡️', style: TextStyle(fontSize: 16)),
+                        label: const Text('Administrator'),
+                      ),
+                      const SizedBox(height: ClTokens.space2),
+                      OutlinedButton.icon(
+                        onPressed: _submitting
+                            ? null
+                            : () => _quickLogin('member@controlleads.local', 'member123'),
+                        icon: const Text('👤', style: TextStyle(fontSize: 16)),
+                        label: const Text('Marketing Team'),
                       ),
                     ],
                   ),

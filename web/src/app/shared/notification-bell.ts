@@ -7,10 +7,6 @@ import {
   notificationText
 } from '../core/api/notifications.service';
 
-/**
- * Bell + unread badge in the top bar. Polls the unread count and, when opened,
- * shows the recent list; clicking an item marks it read and jumps to the lead.
- */
 @Component({
   selector: 'app-notification-bell',
   imports: [DatePipe],
@@ -56,76 +52,86 @@ import {
       font-size: 18px;
       cursor: pointer;
       line-height: 1;
-      padding: var(--cl-space-1);
+      padding: 6px;
+      border-radius: 8px;
+      transition: background 0.2s ease;
+    }
+    .trigger:hover {
+      background: rgba(255, 255, 255, 0.08);
     }
     .badge {
       position: absolute;
-      top: -2px;
-      right: -4px;
+      top: 0px;
+      right: -2px;
       min-width: 16px;
       height: 16px;
       padding: 0 4px;
-      border-radius: var(--cl-radius-full);
-      background: var(--cl-color-semantic-danger);
+      border-radius: 9999px;
+      background: #EF4444;
       color: #fff;
       font-size: 10px;
-      font-weight: var(--cl-font-weight-bold);
+      font-weight: 700;
       display: grid;
       place-items: center;
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
     }
     .backdrop { position: fixed; inset: 0; z-index: 10; }
     .panel {
       position: absolute;
-      top: calc(100% + 8px);
+      top: calc(100% + 12px);
       right: 0;
       z-index: 11;
       width: 340px;
       max-height: 70vh;
       overflow-y: auto;
-      background: var(--cl-color-neutral-0);
-      border-radius: var(--cl-radius-lg);
-      box-shadow: var(--cl-elevation-raised);
+      background: #161F33;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
     }
     header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: var(--cl-space-3) var(--cl-space-4);
-      border-bottom: 1px solid var(--cl-color-neutral-100);
-      font-size: var(--cl-font-size-sm);
-      font-weight: var(--cl-font-weight-semibold);
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 13px;
+      font-weight: 700;
+      color: #F8FAFC;
     }
     .link {
       border: none; background: none; padding: 0;
-      font: inherit; font-size: var(--cl-font-size-xs);
-      color: var(--cl-color-brand-primary); cursor: pointer;
+      font-family: var(--cl-font-family-display); font-size: 11px;
+      color: #818CF8; cursor: pointer; font-weight: 600;
     }
+    .link:hover { text-decoration: underline; }
     .item {
       display: flex;
-      gap: var(--cl-space-3);
+      gap: 12px;
       width: 100%;
       text-align: left;
       border: none;
       background: none;
-      padding: var(--cl-space-3) var(--cl-space-4);
+      padding: 12px 16px;
       cursor: pointer;
-      border-bottom: 1px solid var(--cl-color-neutral-50);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      transition: background 0.2s ease;
     }
-    .item:hover { background: var(--cl-color-neutral-50); }
-    .item.unread { background: var(--cl-color-brand-primary-soft); }
-    .item.unread:hover { background: var(--cl-color-brand-primary-soft); }
+    .item:hover { background: rgba(255, 255, 255, 0.04); }
+    .item.unread { background: rgba(99, 102, 241, 0.1); }
+    .item.unread:hover { background: rgba(99, 102, 241, 0.18); }
     .dot {
-      width: 8px; height: 8px; margin-top: 5px; border-radius: var(--cl-radius-full); flex-shrink: 0;
+      width: 8px; height: 8px; margin-top: 5px; border-radius: 50%; flex-shrink: 0;
     }
-    .dot--sla_breach { background: var(--cl-color-status-hot-lead); }
-    .dot--follow_up_due { background: var(--cl-color-brand-accent); }
+    .dot--sla_breach { background: #EF4444; box-shadow: 0 0 6px #EF4444; }
+    .dot--follow_up_due { background: #F59E0B; box-shadow: 0 0 6px #F59E0B; }
     .body { display: grid; gap: 2px; }
-    .text { font-size: var(--cl-font-size-sm); color: var(--cl-color-neutral-800); }
-    .time { font-size: var(--cl-font-size-xs); color: var(--cl-color-neutral-400); }
+    .text { font-size: 13px; color: #F8FAFC; }
+    .time { font-size: 11px; color: #64748B; }
     .empty {
-      margin: 0; padding: var(--cl-space-5);
-      text-align: center; color: var(--cl-color-neutral-400);
-      font-size: var(--cl-font-size-sm);
+      margin: 0; padding: 24px;
+      text-align: center; color: #64748B;
+      font-size: 13px;
     }
   `
 })

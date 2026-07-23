@@ -1,111 +1,219 @@
-<app-topbar />
+<div class="app-layout">
+  <app-sidebar />
 
-<main class="content">
-  <div class="dash-head">
-    <h1>Welcome, {{ auth.user()?.name }}</h1>
-    <div class="period no-print">
-      <label>From <input type="date" [(ngModel)]="from" /></label>
-      <label>To <input type="date" [(ngModel)]="to" /></label>
-      <button type="button" (click)="applyPeriod()">Apply</button>
-      @if (from || to) {
-        <button type="button" class="ghost" (click)="clearPeriod()">Clear</button>
-      }
-      <button type="button" class="ghost" (click)="print()">🖨 Print / PDF</button>
-    </div>
-  </div>
+  <main class="main-canvas">
+    <header class="canvas-header">
+      <div class="header-title">
+        <h1>Analytics Overview</h1>
+        <p class="subtitle">International student recruitment funnel & real-time performance</p>
+      </div>
 
-  @if (offline()) {
-    <p class="notice">
-      Analytics endpoints are not available yet — charts will light up once the backend lands (Fase 1d).
-      Meanwhile, jump into your <a routerLink="/leads">leads</a> or the <a routerLink="/board">board</a>.
-    </p>
-  }
+      <div class="header-actions">
+        <div class="presets">
+          <button type="button" class="preset-btn" [class.active]="!from && !to" (click)="selectPreset(null)">All Time</button>
+          <button type="button" class="preset-btn" (click)="selectPreset(7)">7 Days</button>
+          <button type="button" class="preset-btn" (click)="selectPreset(30)">30 Days</button>
+        </div>
 
-  @if (summary(); as s) {
-    <div class="kpis">
-      <div class="kpi card">
-        <span class="value">{{ s.totalLeads }}</span>
-        <span class="label">Total leads</span>
-      </div>
-      <div class="kpi card">
-        <span class="value">{{ s.newLeads }}</span>
-        <span class="label">New this period</span>
-      </div>
-      <div class="kpi card">
-        <span class="value">{{ s.conversionRate | percent: '1.0-1' }}</span>
-        <span class="label">Conversion rate</span>
-      </div>
-      <div class="kpi card">
-        <span class="value">{{ s.avgDaysToConvert !== null ? (s.avgDaysToConvert | number: '1.0-0') : '—' }}</span>
-        <span class="label">Avg. days to convert</span>
-      </div>
-      <div class="kpi card" [class.alert]="s.slaBreaches > 0">
-        <span class="value">{{ s.slaBreaches }}</span>
-        <span class="label">SLA breaches</span>
-      </div>
-    </div>
-  }
-
-  @if (followUps().length > 0) {
-    <section class="card tasks">
-      <h2>My tasks</h2>
-      <ul>
-        @for (task of followUps(); track task.id) {
-          <li>
-            <a [routerLink]="['/leads', task.leadId]">{{ task.leadName }}</a>
-            <span class="task-content">{{ task.content }}</span>
-            <span class="due">due {{ task.dueAt | date: 'short' }}</span>
-            <button type="button" (click)="completeTask(task)">Done ✓</button>
-          </li>
-        }
-      </ul>
-    </section>
-  }
-
-  <div class="charts">
-    @if (funnelChart(); as options) {
-      <section class="card chart-card span2">
-        <h2>Funnel</h2>
-        <app-chart [options]="options" height="300px" />
-      </section>
-    }
-    @if (dropOffChart(); as options) {
-      <section class="card chart-card">
-        <h2>Why leads stall</h2>
-        <app-chart [options]="options" height="300px" />
-      </section>
-    }
-    @if (timeseriesChart(); as options) {
-      <section class="card chart-card span2">
-        <h2>Leads over time</h2>
-        <app-chart [options]="options" height="280px" />
-      </section>
-    }
-    @if (countryChart(); as options) {
-      <section class="card chart-card">
-        <h2>Top countries</h2>
-        <app-chart [options]="options" height="280px" />
-      </section>
-    }
-    @if (channelChart(); as options) {
-      <section class="card chart-card span2">
-        <h2>Channel performance</h2>
-        <app-chart [options]="options" height="280px" />
-      </section>
-    }
-    @if (auth.isAdmin() && leaderboard().length > 0) {
-      <section class="card chart-card">
-        <h2>Team leaderboard</h2>
-        <ol class="leaderboard">
-          @for (row of leaderboard(); track row.userId; let i = $index) {
-            <li>
-              <span class="rank">{{ i + 1 }}</span>
-              <span class="name">{{ row.name }}</span>
-              <span class="stats">{{ row.students }} students · {{ row.totalLeads }} leads</span>
-            </li>
+        <div class="date-pickers">
+          @if (counselors().length > 0) {
+            <select [ngModel]="selectedCounselorId" (ngModelChange)="onCounselorChange($event)" class="counselor-select">
+              <option value="">All Counselors</option>
+              @for (c of counselors(); track c.id) {
+                <option [value]="c.id">👤 {{ c.name }}</option>
+              }
+            </select>
           }
-        </ol>
-      </section>
-    }
-  </div>
-</main>
+
+          <input type="date" [(ngModel)]="from" (change)="applyPeriod()" />
+          <input type="date" [(ngModel)]="to" (change)="applyPeriod()" />
+          @if (from || to) {
+            <button type="button" class="btn-ghost" (click)="clearPeriod()">✕</button>
+          }
+          <button type="button" class="btn-secondary" (click)="print()">🖨 Print Report</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="canvas-content">
+      @if (offline()) {
+        <div class="card notice-card">
+          <span>⚠️ Analytics initializing — explore candidate <a routerLink="/leads">Leads</a> or the <a routerLink="/board">Pipeline Board</a>.</span>
+        </div>
+      }
+
+      @if (summary(); as s) {
+        <div class="kpi-grid">
+          <div class="kpi-card card">
+            <div class="kpi-icon glow-indigo">📋</div>
+            <div class="kpi-body">
+              <span class="kpi-value">{{ s.totalLeads }}</span>
+              <span class="kpi-label">Total Leads</span>
+            </div>
+          </div>
+
+          <div class="kpi-card card">
+            <div class="kpi-icon glow-cyan">⚡</div>
+            <div class="kpi-body">
+              <span class="kpi-value">{{ s.newLeads }}</span>
+              <span class="kpi-label">New This Period</span>
+            </div>
+          </div>
+
+          <div class="kpi-card card">
+            <div class="kpi-icon glow-emerald">📈</div>
+            <div class="kpi-body">
+              <span class="kpi-value">{{ s.conversionRate | percent: '1.0-1' }}</span>
+              <span class="kpi-label">Conversion Rate</span>
+            </div>
+          </div>
+
+          <div class="kpi-card card">
+            <div class="kpi-icon glow-purple">⏱️</div>
+            <div class="kpi-body">
+              <span class="kpi-value">{{ s.avgDaysToConvert !== null ? (s.avgDaysToConvert | number: '1.0-0') : '—' }}</span>
+              <span class="kpi-label">Avg. Days to Convert</span>
+            </div>
+          </div>
+
+          <div class="kpi-card card" [class.alert]="s.slaBreaches > 0">
+            <div class="kpi-icon glow-red">⚠️</div>
+            <div class="kpi-body">
+              <span class="kpi-value">{{ s.slaBreaches }}</span>
+              <span class="kpi-label">SLA Breaches</span>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (followUps().length > 0) {
+        <section class="card tasks-card">
+          <div class="card-header">
+            <div class="title-meta">
+              <h2>My Follow-up Tasks</h2>
+              <span class="task-badge">{{ followUps().length }} PENDING</span>
+            </div>
+          </div>
+          <ul class="task-list">
+            @for (task of followUps(); track task.id) {
+              <li class="task-item">
+                <div class="task-info">
+                  <a [routerLink]="['/leads', task.leadId]" class="task-lead">👤 {{ task.leadName }}</a>
+                  <span class="task-desc">{{ task.content }}</span>
+                </div>
+                <div class="task-meta">
+                  <span class="due-tag">due {{ task.dueAt | date: 'short' }}</span>
+                  <button type="button" class="btn-done" (click)="completeTask(task)">✓ Done</button>
+                </div>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
+      <div class="charts-grid">
+        @if (funnelChart(); as options) {
+          <section class="card chart-card span-2">
+            <div class="chart-header">
+              <h2>Recruitment Funnel</h2>
+              <span class="chart-sub">Lead progression stages</span>
+            </div>
+            @if (hasFunnelData()) {
+              <app-chart [options]="options" height="300px" />
+            } @else {
+              <div class="empty-chart-placeholder">
+                <span class="icon">📊</span>
+                <span class="text">No funnel data available in this period</span>
+              </div>
+            }
+          </section>
+        }
+        @if (dropOffChart(); as options) {
+          <section class="card chart-card">
+            <div class="chart-header">
+              <h2>Stall Reasons</h2>
+              <span class="chart-sub">Candidate pause analytics</span>
+            </div>
+            @if (hasDropOffData()) {
+              <app-chart [options]="options" height="300px" />
+            } @else {
+              <div class="empty-chart-placeholder">
+                <span class="icon">💤</span>
+                <span class="text">No stalled candidates in this period</span>
+              </div>
+            }
+          </section>
+        }
+        @if (timeseriesChart(); as options) {
+          <section class="card chart-card span-2">
+            <div class="chart-header">
+              <h2>Trajectory Over Time</h2>
+              <span class="chart-sub">Weekly created vs enrolled students</span>
+            </div>
+            @if (hasTimeseriesData()) {
+              <app-chart [options]="options" height="280px" />
+            } @else {
+              <div class="empty-chart-placeholder">
+                <span class="icon">📈</span>
+                <span class="text">No transaction data over time</span>
+              </div>
+            }
+          </section>
+        }
+        @if (countryChart(); as options) {
+          <section class="card chart-card">
+            <div class="chart-header">
+              <h2>Top Origin Countries</h2>
+              <span class="chart-sub">Candidate nationality split</span>
+            </div>
+            @if (hasCountryData()) {
+              <app-chart [options]="options" height="280px" />
+            } @else {
+              <div class="empty-chart-placeholder">
+                <span class="icon">🌍</span>
+                <span class="text">No country demographic data available</span>
+              </div>
+            }
+          </section>
+        }
+        @if (channelChart(); as options) {
+          <section class="card chart-card span-2">
+            <div class="chart-header">
+              <h2>Channel Performance</h2>
+              <span class="chart-sub">Acquisition sources & conversions</span>
+            </div>
+            @if (hasChannelData()) {
+              <app-chart [options]="options" height="280px" />
+            } @else {
+              <div class="empty-chart-placeholder">
+                <span class="icon">📢</span>
+                <span class="text">No channel performance data</span>
+              </div>
+            }
+          </section>
+        }
+        @if (auth.isAdmin() && leaderboard().length > 0) {
+          <section class="card chart-card">
+            <div class="chart-header">
+              <h2>Counselor Leaderboard</h2>
+              <span class="chart-sub">Top recruitment counselors</span>
+            </div>
+            <ol class="leaderboard">
+              @for (row of leaderboard(); track row.userId; let i = $index) {
+                <li class="leaderboard-row">
+                  <span class="rank-icon" [class.rank-1]="i === 0">
+                    {{ i === 0 ? '🏆' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1 }}
+                  </span>
+                  <div class="counselor-details">
+                    <span class="counselor-name">{{ row.name }}</span>
+                    <span class="counselor-stats">{{ row.students }} enrolled / {{ row.totalLeads }} total</span>
+                  </div>
+                </li>
+              }
+            </ol>
+          </section>
+        }
+      </div>
+    </div>
+  </main>
+</div>

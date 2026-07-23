@@ -9,11 +9,6 @@ import {
 import * as echarts from 'echarts';
 import type { EChartsOption } from 'echarts';
 
-/**
- * Thin ECharts wrapper — no ngx-echarts dependency, one less version to chase.
- * Charts animate on load/update using the durations from the design tokens
- * (pass them inside the option; see analytics helpers).
- */
 @Component({
   selector: 'app-chart',
   template: `<div #el class="chart" [style.height]="height()"></div>`,
@@ -51,22 +46,29 @@ export class Chart implements OnDestroy {
   }
 }
 
-/** Reads a design token CSS variable at runtime — charts stay on-brand. */
 export function cssVar(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
 export function chartPalette(): string[] {
-  return [1, 2, 3, 4, 5, 6, 7, 8].map((i) => cssVar(`--cl-color-chart-${i}`));
+  return ['#6366F1', '#0EA5E9', '#10B981', '#F59E0B', '#EC4899', '#8B5CF6', '#34D399', '#38BDF8'];
 }
 
-/** Base option shared by every chart: animation timing + font from tokens. */
 export function baseChartOption(): EChartsOption {
   return {
     color: chartPalette(),
     animationDuration: 800,
     animationEasing: 'cubicOut',
-    textStyle: { fontFamily: cssVar('--cl-font-family-base') },
-    tooltip: { trigger: 'item' }
+    textStyle: { fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#94A3B8' },
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: '#0D1322',
+      borderColor: 'rgba(255, 255, 255, 0.12)',
+      textStyle: { color: '#F8FAFC', fontSize: 12, fontFamily: 'Inter, sans-serif' },
+      borderRadius: 10,
+      padding: [10, 14],
+      shadowBlur: 16,
+      shadowColor: 'rgba(0, 0, 0, 0.5)'
+    }
   };
 }

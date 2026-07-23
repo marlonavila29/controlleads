@@ -1,42 +1,39 @@
-import { HttpClient } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { AuthUser, UserRole } from '../../core/auth/auth.service';
-
-interface TeamMember extends AuthUser {
-  active: boolean;
-  createdAt: string;
-  leadCount: number;
-}
+import { UserRole } from '../../core/auth/auth.service';
+import { AddButton } from '../../shared/add-button';
+import { CustomSelect, SelectOption } from '../../shared/custom-select';
+import { Sidebar } from '../../shared/sidebar';
+import { TeamMember, UsersService } from '../../core/api/users.service';
 
 @Component({
   selector: 'app-users',
-  imports: [ReactiveFormsModule, FormsModule, RouterLink, DatePipe],
+  imports: [ReactiveFormsModule, FormsModule, DatePipe, Sidebar, AddButton, CustomSelect],
   templateUrl: './users.html',
   styleUrl: './users.scss'
 })
 export class Users {
-  private readonly http = inject(HttpClient);
   private readonly fb = inject(FormBuilder);
+  private readonly usersService = inject(UsersService);
 
   protected readonly members = signal<TeamMember[]>([]);
-  protected readonly error = signal<string | null>(null);
+  protected readonly loading = signal(false);
   protected readonly creating = signal(false);
+  protected readonly error = signal<string | null>(null);
 
-  // Inline "reassign this user's leads" state.
   protected readonly reassigningId = signal<string | null>(null);
   protected reassignTargetId = '';
 
-  protected otherActiveMembers(memberId: string): TeamMember[] {
-    return this.members().filter((m) => m.id !== memberId && m.active);
-  }
+  protected readonly roleOptions: SelectOption[] = [
+    { id: 'MARKETING_TEAM', name: 'Marketing Team (Counselor)' },
+    { id: 'ADMINISTRATOR', name: 'Administrator' }
+  ];
 
   protected readonly form = this.fb.nonNullable.group({
     name: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(8)]],
+    password: ['', [Validators.required, Validators.minLength(6)]],
     role: ['MARKETING_TEAM' as UserRole, Validators.required]
   });
 
@@ -45,7 +42,17 @@ export class Users {
   }
 
   protected reload(): void {
-    this.http.get<TeamMember[]>('/api/users').subscribe((list) => this.members.set(list));
+    this.loading.set(true);
+    this.usersService.list().subscribe({
+      next: (list) => {
+        this.members.set(list);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        this.error.set(err.error?.title ?? 'Failed to load team members.');
+        this.loading.set(false);
+      }
+    });
   }
 
   protected create(): void {
@@ -55,42 +62,53 @@ export class Users {
     }
     this.creating.set(true);
     this.error.set(null);
-    this.http.post<TeamMember>('/api/users', this.form.getRawValue()).subscribe({
+
+    const val = this.form.getRawValue();
+    this.usersService.create({
+      name: val.name,
+      email: val.email,
+      password: val.password,
+      role: val.role
+    }).subscribe({
       next: () => {
+        this.form.reset({ role: 'MARKETING_TEAM' });
         this.creating.set(false);
-        this.form.reset({ name: '', email: '', password: '', role: 'MARKETING_TEAM' });
         this.reload();
       },
       error: (err) => {
+        this.error.set(err.error?.title ?? 'Failed to create user.');
         this.creating.set(false);
-        this.error.set(err.status === 409 ? 'A user with this email already exists.' : 'Could not create user.');
       }
     });
   }
 
   protected toggleActive(member: TeamMember): void {
-    this.http
-      .patch<TeamMember>(`/api/users/${member.id}`, { active: !member.active })
-      .subscribe(() => this.reload());
+    this.usersService.update(member.id, { active: !member.active }).subscribe({
+      next: () => this.reload(),
+      error: (err) => this.error.set(err.error?.title ?? 'Failed to toggle status.')
+    });
   }
 
   protected startReassign(member: TeamMember): void {
-    this.reassignTargetId = '';
     this.reassigningId.set(member.id);
+    this.reassignTargetId = '';
+  }
+
+  protected otherActiveMembers(memberId: string): SelectOption[] {
+    return this.members()
+      .filter((m) => m.id !== memberId && m.active)
+      .map((m) => ({ id: m.id, name: m.name }));
   }
 
   protected confirmReassign(member: TeamMember): void {
     if (!this.reassignTargetId) return;
-    this.http
-      .post<{ reassigned: number }>(`/api/users/${member.id}/reassign-leads`, {
-        toUserId: this.reassignTargetId
-      })
-      .subscribe({
-        next: () => {
-          this.reassigningId.set(null);
-          this.reload();
-        },
-        error: (err) => this.error.set(err.error?.title ?? 'Could not reassign leads.')
-      });
+    this.usersService.reassignLeads(member.id, this.reassignTargetId).subscribe({
+      next: () => {
+        this.reassigningId.set(null);
+        this.reassignTargetId = '';
+        this.reload();
+      },
+      error: (err) => this.error.set(err.error?.title ?? 'Failed to reassign leads.')
+    });
   }
 }

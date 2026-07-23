@@ -1,15 +1,17 @@
 import { DatePipe } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CatalogService } from '../../core/api/catalog.service';
 import { Lead, LeadPage, LeadStatus, LeadsService, STATUS_LABELS } from '../../core/api/leads.service';
 import { StatusBadge } from '../../shared/status-badge';
-import { Topbar } from '../../shared/topbar';
+import { AddButton } from '../../shared/add-button';
+import { CustomSelect, SelectOption } from '../../shared/custom-select';
+import { Sidebar } from '../../shared/sidebar';
 
 @Component({
   selector: 'app-leads',
-  imports: [FormsModule, RouterLink, DatePipe, StatusBadge, Topbar],
+  imports: [FormsModule, RouterLink, DatePipe, StatusBadge, Sidebar, AddButton, CustomSelect],
   templateUrl: './leads.html',
   styleUrl: './leads.scss'
 })
@@ -29,6 +31,27 @@ export class Leads {
   protected courseId = '';
   protected channelId = '';
   protected pageIndex = 0;
+
+  protected readonly statusOptions = computed<SelectOption[]>(() => {
+    return [
+      { id: '', name: 'All Statuses' },
+      ...this.statuses.map((s) => ({ id: s, name: this.statusLabels[s] }))
+    ];
+  });
+
+  protected readonly courseOptions = computed<SelectOption[]>(() => {
+    return [
+      { id: '', name: 'All Courses' },
+      ...this.catalogs.activeCourses().map((c) => ({ id: c.id, name: c.name }))
+    ];
+  });
+
+  protected readonly channelOptions = computed<SelectOption[]>(() => {
+    return [
+      { id: '', name: 'All Channels' },
+      ...this.catalogs.activeChannels().map((c) => ({ id: c.id, name: c.name }))
+    ];
+  });
 
   constructor() {
     this.catalogs.loadAll();

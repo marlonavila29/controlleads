@@ -58,6 +58,7 @@ export interface LeaderboardRow {
 export interface DateRange {
   from?: string; // ISO date
   to?: string;
+  assignedTo?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -104,5 +105,6 @@ function toParams(range: DateRange): HttpParams {
   let params = new HttpParams();
   if (range.from) params = params.set('from', range.from);
   if (range.to) params = params.set('to', range.to);
+  if (range.assignedTo) params = params.set('assignedTo', range.assignedTo);
   return params;
 }

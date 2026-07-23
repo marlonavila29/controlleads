@@ -35,18 +35,59 @@ public class CatalogController {
         }
     }
 
+    public record CountryDto(String code, String name) {}
+
     public record CreateCatalogRequest(@NotBlank String name) {}
     public record UpdateCatalogRequest(String name, Boolean active) {}
+
+    @Operation(summary = "List ISO countries for dropdowns")
+    @GetMapping("/api/countries")
+    public List<CountryDto> listCountries() {
+        return java.util.Arrays.stream(java.util.Locale.getISOCountries())
+                .map(code -> new CountryDto(code, new java.util.Locale("", code).getDisplayCountry(java.util.Locale.ENGLISH)))
+                .filter(c -> c.name() != null && !c.name().isBlank())
+                .sorted(java.util.Comparator.comparing(CountryDto::name))
+                .toList();
+    }
 
     private final CourseRepository courses;
     private final ChannelRepository channels;
     private final StallReasonRepository stallReasons;
+    private final CampaignRepository campaigns;
 
     public CatalogController(CourseRepository courses, ChannelRepository channels,
-                             StallReasonRepository stallReasons) {
+                             StallReasonRepository stallReasons, CampaignRepository campaigns) {
         this.courses = courses;
         this.channels = channels;
         this.stallReasons = stallReasons;
+        this.campaigns = campaigns;
+    }
+
+    // ----- Campaigns -----
+
+    @Operation(summary = "List campaigns")
+    @GetMapping("/api/campaigns")
+    public List<CatalogDto> listCampaigns() {
+        return list(campaigns);
+    }
+
+    @Operation(summary = "Create campaign (admin)")
+    @PostMapping("/api/campaigns")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CatalogDto createCampaign(@Valid @RequestBody CreateCatalogRequest request) {
+        if (campaigns.existsByNameIgnoreCase(request.name())) {
+            throw ApiException.conflict("Campaign already exists");
+        }
+        return CatalogDto.from(campaigns.save(new Campaign(request.name())));
+    }
+
+    @Operation(summary = "Rename or (de)activate campaign (admin)")
+    @PatchMapping("/api/campaigns/{id}")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    @Transactional
+    public CatalogDto updateCampaign(@PathVariable UUID id, @RequestBody UpdateCatalogRequest request) {
+        return update(campaigns, id, request);
     }
 
     // ----- Courses -----

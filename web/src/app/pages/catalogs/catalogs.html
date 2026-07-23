@@ -1,33 +1,90 @@
-<app-topbar />
+<div class="app-layout">
+  <app-sidebar />
 
-<main class="content">
-  <h1>Catalogs</h1>
-  @if (error(); as message) {
-    <p class="error">{{ message }}</p>
-  }
+  <main class="main-canvas">
+    <header class="canvas-header">
+      <div class="header-title">
+        <h1>System Catalogs & Settings</h1>
+        <p class="subtitle">Configure academic options, source channels, marketing campaigns, and global sharing rules</p>
+      </div>
+    </header>
 
-  <div class="grid">
-    @for (section of sections; track section.kind) {
-      <section class="card">
-        <h2>{{ section.title }}</h2>
-        <p class="hint">{{ section.hint }}</p>
+    <div class="canvas-content">
+      @if (error(); as message) {
+        <div class="error-banner">⚠️ {{ message }}</div>
+      }
 
-        <form class="add" (submit)="$event.preventDefault(); add(section.kind)">
-          <input [(ngModel)]="drafts[section.kind]" [name]="section.kind" placeholder="Add new…" />
-          <button type="submit">Add</button>
-        </form>
+      <div class="grid">
+        @for (section of sections; track section.kind) {
+          <section class="card catalog-card">
+            <h2 class="card-title">{{ section.title }}</h2>
+            <p class="hint">{{ section.hint }}</p>
 
-        <ul>
-          @for (item of itemsOf(section.kind); track item.id) {
-            <li [class.inactive]="!item.active">
-              <span>{{ item.name }}</span>
-              <button type="button" (click)="toggle(section.kind, item.id, item.active)">
-                {{ item.active ? 'Deactivate' : 'Reactivate' }}
-              </button>
-            </li>
-          }
-        </ul>
+            <form class="add-form" (submit)="$event.preventDefault(); add(section.kind)">
+              <input [(ngModel)]="drafts[section.kind]" [name]="section.kind" placeholder="Add option…" />
+              <app-add-button label="Add" type="submit" />
+            </form>
+
+            <ul class="item-list">
+              @for (item of itemsOf(section.kind); track item.id) {
+                <li class="item-row" [class.inactive]="!item.active">
+                  <span class="item-name">{{ item.name }}</span>
+                  <button type="button" class="btn-toggle" [class.active]="item.active" (click)="toggle(section.kind, item.id, item.active)">
+                    {{ item.active ? 'Deactivate' : 'Reactivate' }}
+                  </button>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      </div>
+
+      <!-- Global Settings Panel -->
+      <section class="card settings-card mt-6">
+        <h2 class="card-title">⚙️ System Rules & Team Sharing Config</h2>
+        <p class="hint">Global rules for team access, analytics visibility, and SLA breach timers (Admin Only)</p>
+
+        @if (catalogs.settings(); as s) {
+          <div class="settings-grid">
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-label">Share Leads & Analytics with Counselors</span>
+                <span class="setting-desc">When enabled, counselors can view and search all candidates, including pipeline board and dashboard analytics charts. Otherwise, they only see their assigned leads (default).</span>
+              </div>
+              <div class="setting-control">
+                <button
+                  type="button"
+                  class="btn-toggle-switch"
+                  [class.active]="s.shareLeadsVisibility"
+                  (click)="toggleShareVisibility(s.shareLeadsVisibility)"
+                >
+                  {{ s.shareLeadsVisibility ? 'ON — Shared Access' : 'OFF — Private Access' }}
+                </button>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-label">SLA Threshold (Hot Lead Max Hours)</span>
+                <span class="setting-desc">The maximum number of hours a HOT LEAD can go uncontacted before triggering an SLA breach notification.</span>
+              </div>
+              <div class="setting-control inline-flex-row">
+                <input
+                  type="number"
+                  class="sla-input"
+                  [ngModel]="s.hotLeadMaxHours"
+                  (ngModelChange)="updateSlaHours($event)"
+                  min="1"
+                  max="168"
+                />
+                <span class="unit-label">hours</span>
+              </div>
+            </div>
+          </div>
+        } @else {
+          <div class="settings-loading">Loading system configuration…</div>
+        }
       </section>
-    }
-  </div>
-</main>
+    </div>
+  </main>
+</div>

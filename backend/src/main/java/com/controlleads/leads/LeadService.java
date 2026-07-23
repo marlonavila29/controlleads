@@ -24,11 +24,12 @@ public class LeadService {
     private final ChannelRepository channels;
     private final StallReasonRepository stallReasons;
     private final UserRepository users;
+    private final com.controlleads.settings.AppSettingsService settings;
 
     public LeadService(LeadRepository leads, LeadStatusEventRepository statusEvents,
                        LeadAssignmentEventRepository assignmentEvents, CourseRepository courses,
                        ChannelRepository channels, StallReasonRepository stallReasons,
-                       UserRepository users) {
+                       UserRepository users, com.controlleads.settings.AppSettingsService settings) {
         this.leads = leads;
         this.statusEvents = statusEvents;
         this.assignmentEvents = assignmentEvents;
@@ -36,6 +37,7 @@ public class LeadService {
         this.channels = channels;
         this.stallReasons = stallReasons;
         this.users = users;
+        this.settings = settings;
     }
 
     /** Marketing works only on own leads; admins on all (CLAUDE.md rule 3). */
@@ -43,7 +45,14 @@ public class LeadService {
         Lead lead = leads.findById(id)
             .filter(l -> l.getDeletedAt() == null)
             .orElseThrow(() -> ApiException.notFound("Lead not found"));
-        if (!caller.isAdmin() && !lead.getAssignedTo().equals(caller.id())) {
+        
+        // If share leads setting is true, any authenticated user can view any lead.
+        // Otherwise, only admins or assigned owners can view.
+        boolean allowed = caller.isAdmin() || 
+                          lead.getAssignedTo().equals(caller.id()) || 
+                          (settings.shareLeadsVisibility());
+                          
+        if (!allowed) {
             // Not-found (not 403) so members cannot probe other people's lead ids.
             throw ApiException.notFound("Lead not found");
         }

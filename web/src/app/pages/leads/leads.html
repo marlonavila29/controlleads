@@ -1,75 +1,116 @@
-<app-topbar />
+<div class="app-layout">
+  <app-sidebar />
 
-<main class="content">
-  <div class="heading">
-    <h1>Leads</h1>
-    <div class="heading-actions">
-      <button type="button" class="secondary" (click)="exportCsv()">↓ Export CSV</button>
-      <a routerLink="/leads/new" class="primary">+ New lead</a>
-    </div>
-  </div>
-
-  <div class="filters card">
-    <input placeholder="Search name, email or phone…" [(ngModel)]="q" (keyup.enter)="applyFilters()" />
-    <select [(ngModel)]="status" (change)="applyFilters()">
-      <option value="">All statuses</option>
-      @for (s of statuses; track s) {
-        <option [value]="s">{{ statusLabels[s] }}</option>
-      }
-    </select>
-    <select [(ngModel)]="courseId" (change)="applyFilters()">
-      <option value="">All courses</option>
-      @for (c of catalogs.courses(); track c.id) {
-        <option [value]="c.id">{{ c.name }}</option>
-      }
-    </select>
-    <select [(ngModel)]="channelId" (change)="applyFilters()">
-      <option value="">All channels</option>
-      @for (c of catalogs.channels(); track c.id) {
-        <option [value]="c.id">{{ c.name }}</option>
-      }
-    </select>
-    <button type="button" (click)="applyFilters()">Filter</button>
-  </div>
-
-  @if (page(); as p) {
-    <table class="card">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Country</th>
-          <th>Course</th>
-          <th>Channel</th>
-          <th>Status</th>
-          <th>Owner</th>
-          <th>Created</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (lead of p.content; track lead.id) {
-          <tr (click)="goTo(lead)">
-            <td class="strong">{{ lead.fullName }}</td>
-            <td>{{ lead.countryCode }}</td>
-            <td>{{ catalogs.nameOf('courses', lead.courseId) }}</td>
-            <td>{{ catalogs.nameOf('channels', lead.channelId) }}</td>
-            <td><app-status-badge [status]="lead.status" /></td>
-            <td>{{ lead.assignedToName }}</td>
-            <td>{{ lead.createdAt | date: 'mediumDate' }}</td>
-          </tr>
-        } @empty {
-          <tr>
-            <td colspan="7" class="empty">No leads found. Create the first one!</td>
-          </tr>
-        }
-      </tbody>
-    </table>
-
-    @if (p.totalPages > 1) {
-      <div class="pager">
-        <button [disabled]="p.page === 0" (click)="move(-1)">‹ Prev</button>
-        <span>Page {{ p.page + 1 }} of {{ p.totalPages }} · {{ p.totalElements }} leads</span>
-        <button [disabled]="p.page >= p.totalPages - 1" (click)="move(1)">Next ›</button>
+  <main class="main-canvas">
+    <header class="canvas-header">
+      <div class="header-title">
+        <h1>Candidate Directory</h1>
+        <p class="subtitle">Search, filter, and manage international student applications</p>
       </div>
-    }
-  }
-</main>
+
+      <div class="header-actions">
+        <app-add-button label="Add New Lead" routerLink="/leads/new" />
+      </div>
+    </header>
+
+    <div class="canvas-content">
+      <div class="filters-bar card">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input
+            type="text"
+            [(ngModel)]="q"
+            (keyup.enter)="applyFilters()"
+            placeholder="Search candidate name, email, or phone..."
+            class="search-input"
+          />
+        </div>
+
+        <div class="filter-controls">
+          <app-custom-select
+            [(ngModel)]="status"
+            (ngModelChange)="applyFilters()"
+            [options]="statusOptions()"
+            placeholder="All Statuses"
+          />
+
+          <app-custom-select
+            [(ngModel)]="courseId"
+            (ngModelChange)="applyFilters()"
+            [options]="courseOptions()"
+            placeholder="All Target Courses"
+          />
+
+          <app-custom-select
+            [(ngModel)]="channelId"
+            (ngModelChange)="applyFilters()"
+            [options]="channelOptions()"
+            placeholder="All Channels"
+          />
+
+          <button type="button" class="btn-secondary" (click)="exportCsv()">
+            📥 Export CSV
+          </button>
+        </div>
+      </div>
+
+      <div class="table-card card">
+        <table>
+          <thead>
+            <tr>
+              <th>Candidate Name</th>
+              <th>Status</th>
+              <th>Course</th>
+              <th>Channel</th>
+              <th>Counselor</th>
+              <th>Created</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (page(); as p) {
+              @for (lead of p.content; track lead.id) {
+                <tr (click)="goTo(lead)">
+                  <td class="candidate-cell">
+                    <div class="candidate-info">
+                      <span class="candidate-name">{{ lead.fullName }}</span>
+                      <span class="candidate-email">{{ lead.email ?? lead.phone ?? 'No contact info' }}</span>
+                    </div>
+                  </td>
+                  <td><app-status-badge [status]="lead.status" /></td>
+                  <td><span class="course-chip">🎓 {{ catalogs.nameOf('courses', lead.courseId) }}</span></td>
+                  <td><span class="channel-chip">📢 {{ catalogs.nameOf('channels', lead.channelId) }}</span></td>
+                  <td><span class="counselor-chip">👤 {{ lead.assignedToName }}</span></td>
+                  <td><span class="date-text">{{ lead.createdAt | date: 'mediumDate' }}</span></td>
+                  <td class="text-right">
+                    <a [routerLink]="['/leads', lead.id]" (click)="$event.stopPropagation()" class="btn-ghost">View →</a>
+                  </td>
+                </tr>
+              }
+              @if (p.content.length === 0) {
+                <tr>
+                  <td colspan="7" class="empty-state">
+                    No candidate leads match your search query.
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+
+        @if (page(); as p) {
+          <div class="pagination-footer">
+            <span class="pagination-count">
+              Showing {{ p.content.length }} of <strong>{{ p.totalElements }}</strong> candidates
+            </span>
+            <div class="pagination-buttons">
+              <button type="button" class="btn-secondary" [disabled]="pageIndex === 0" (click)="move(-1)">← Previous</button>
+              <span class="page-num">Page {{ pageIndex + 1 }}</span>
+              <button type="button" class="btn-secondary" [disabled]="pageIndex + 1 >= p.totalPages" (click)="move(1)">Next →</button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </main>
+</div>

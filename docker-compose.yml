@@ -1,19 +1,50 @@
 services:
   db:
     image: postgres:16-alpine
+    container_name: controlleads-db
     environment:
-      POSTGRES_DB: controlleads
-      POSTGRES_USER: controlleads
-      POSTGRES_PASSWORD: controlleads
+      POSTGRES_DB: ${POSTGRES_DB:-controlleads}
+      POSTGRES_USER: ${POSTGRES_USER:-controlleads}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-controlleads}
     ports:
-      - "5434:5432"   # non-default host port — 5432/5433 already taken on dev machines
+      - "5434:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U controlleads"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-controlleads}"]
       interval: 5s
       timeout: 3s
       retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: controlleads-backend
+    restart: always
+    ports:
+      - "8090:8080"
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://db:5432/controlleads}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-controlleads}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-controlleads}
+      APP_JWT_SECRET: ${JWT_SECRET:-controlleads_secret_key_change_in_production_min_256_bits}
+      APP_SEED_ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@controlleads.local}
+      APP_SEED_ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: controlleads-web
+    restart: always
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
 
 volumes:
   pgdata:

@@ -1,51 +1,242 @@
-<app-topbar />
+<div class="app-layout">
+  <app-sidebar />
 
-<main class="content">
-  <div class="heading">
-    <h1>Pipeline board</h1>
-    @if (error(); as message) {
-      <span class="error">{{ message }}</span>
-    }
-  </div>
-
-  @if (pendingStall(); as lead) {
-    <div class="stall card">
-      <strong>Why did {{ lead.fullName }} stop?</strong>
-      <select [(ngModel)]="stallReasonId">
-        <option value="" disabled>Select a reason…</option>
-        @for (r of catalogs.activeStallReasons(); track r.id) {
-          <option [value]="r.id">{{ r.name }}</option>
-        }
-      </select>
-      <div class="stall-actions">
-        <button (click)="pendingStall.set(null)">Cancel</button>
-        <button class="danger" [disabled]="!stallReasonId" (click)="confirmStall()">Mark stalled</button>
+  <main class="main-canvas">
+    <header class="canvas-header">
+      <div class="header-title">
+        <h1>Pipeline Board</h1>
+        <p class="subtitle">Manage international student recruitment stages</p>
       </div>
-    </div>
-  }
 
-  <div class="board">
-    @for (column of columns; track column) {
-      <section class="column" [class]="'column column--' + column.toLowerCase()">
-        <header>
-          <span>{{ statusLabels[column] }}</span>
-          <span class="count">{{ byStatus()[column].length }}</span>
-        </header>
-        <div
-          class="cards"
-          cdkDropList
-          [cdkDropListData]="column"
-          (cdkDropListDropped)="drop($event)"
-        >
-          @for (lead of byStatus()[column]; track lead.id) {
-            <a class="lead card" cdkDrag [cdkDragData]="lead" [routerLink]="['/leads', lead.id]">
-              <strong>{{ lead.fullName }}</strong>
-              <span class="meta">{{ lead.countryCode }} · {{ catalogs.nameOf('courses', lead.courseId) }}</span>
-              <span class="meta owner">{{ lead.assignedToName }}</span>
-            </a>
+      <div class="header-actions">
+        <app-add-button label="Add Candidate" routerLink="/leads/new" />
+      </div>
+    </header>
+
+    <div class="canvas-content">
+      @if (error(); as message) {
+        <div class="error-banner">⚠️ {{ message }}</div>
+      }
+
+      @if (pendingTransition(); as pending) {
+        <div class="modal-backdrop">
+          <div class="card transition-modal">
+            <div class="modal-header">
+              <h3>⚡ Confirm Status Change</h3>
+            </div>
+            <div class="modal-body">
+              <p>
+                Are you sure you want to move candidate <strong>{{ pending.lead.fullName }}</strong> from
+                <span class="status-pill" [class]="'pill--' + pending.lead.status.toLowerCase()">
+                  {{ statusLabels[pending.lead.status] }}
+                </span>
+                to
+                <span class="status-pill" [class]="'pill--' + pending.targetStatus.toLowerCase()">
+                  {{ statusLabels[pending.targetStatus] }}
+                </span>?
+              </p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn-ghost" (click)="cancelTransition()">Cancel</button>
+              <button type="button" class="btn-primary" (click)="confirmTransition()">
+                Confirm Move
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (pendingStall(); as lead) {
+        <div class="card stall-modal">
+          <div class="stall-head">
+            <strong>⚠️ Why did {{ lead.fullName }} stop?</strong>
+          </div>
+          <div class="stall-body">
+            <app-custom-select
+              [(ngModel)]="stallReasonId"
+              [options]="catalogs.activeStallReasons()"
+              placeholder="Select reason…"
+              [allowOther]="true"
+            />
+            <button type="button" class="btn-ghost" (click)="cancelStall()">Cancel</button>
+            <button type="button" class="btn-primary btn-danger" [disabled]="!stallReasonId" (click)="confirmStall()">
+              Confirm Stall
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Integrated Filters Bar -->
+      <div class="filters-bar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input
+            type="text"
+            placeholder="Search candidate, counselor, program..."
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event)"
+            class="search-input"
+          />
+        </div>
+
+        <div class="filter-controls">
+          <app-custom-select
+            [ngModel]="selectedCourseId()"
+            (ngModelChange)="selectedCourseId.set($event)"
+            [options]="catalogs.activeCourses()"
+            placeholder="All Target Courses"
+          />
+
+          <app-custom-select
+            [ngModel]="selectedCounselorId()"
+            (ngModelChange)="selectedCounselorId.set($event)"
+            [options]="counselorOptions()"
+            placeholder="All Counselors"
+          />
+
+          <app-custom-select
+            [ngModel]="selectedChannelId()"
+            (ngModelChange)="selectedChannelId.set($event)"
+            [options]="catalogs.activeChannels()"
+            placeholder="All Channels"
+          />
+
+          @if (hasActiveFilters()) {
+            <button type="button" class="btn-secondary btn-reset" (click)="resetFilters()" title="Reset Filters">
+              🧹 Clear
+            </button>
           }
         </div>
-      </section>
-    }
-  </div>
-</main>
+      </div>
+
+      <!-- Views Switcher Tabs -->
+      <div class="board-tabs-bar">
+        <div class="tabs">
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="activeTab() === 'board'"
+            (click)="activeTab.set('board')"
+          >
+            📊 Pipeline Board (Drag & Drop)
+          </button>
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="activeTab() === 'list'"
+            (click)="activeTab.set('list')"
+          >
+            ⚡ Direct Status Manager
+          </button>
+        </div>
+
+        <div class="active-count-indicator">
+          <span>Showing <strong>{{ filteredLeads().length }}</strong> of <strong>{{ allLeads().length }}</strong> candidates</span>
+        </div>
+      </div>
+
+      @if (activeTab() === 'board') {
+        <div class="board-grid" cdkDropListGroup>
+          @for (col of columns; track col) {
+            <div class="column-card card">
+              <div class="column-header">
+                <div class="column-title">
+                  <span class="col-dot" [class]="'dot--' + col.toLowerCase()"></span>
+                  <span>{{ statusLabels[col] }}</span>
+                </div>
+                <span class="count-badge">{{ filteredByStatus()[col].length }}</span>
+              </div>
+
+              <div
+                cdkDropList
+                [cdkDropListData]="col"
+                (cdkDropListDropped)="drop($event)"
+                class="column-drop-zone"
+              >
+                @for (lead of filteredByStatus()[col]; track lead.id) {
+                  <div cdkDrag [cdkDragData]="lead" class="lead-drag-card">
+                    <div class="drag-header">
+                      <a [routerLink]="['/leads', lead.id]" class="lead-name">{{ lead.fullName }}</a>
+                    </div>
+                    <div class="drag-meta">
+                      <span class="meta-tag">🎓 {{ catalogs.nameOf('courses', lead.courseId) }}</span>
+                      <span class="meta-tag">📢 {{ catalogs.nameOf('channels', lead.channelId) }}</span>
+                    </div>
+                    <div class="drag-footer">
+                      <span class="counselor-tag">👤 {{ lead.assignedToName }}</span>
+                      <span class="country-pill">{{ lead.countryCode }}</span>
+                    </div>
+                  </div>
+                }
+                @if (filteredByStatus()[col].length === 0) {
+                  <div class="empty-drop">
+                    {{ hasActiveFilters() ? 'No matching candidates' : 'Drop candidate here' }}
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <!-- Direct Status List View -->
+        <div class="status-list-view card">
+          <table class="status-table">
+            <thead>
+              <tr>
+                <th>Candidate Name</th>
+                <th>Course & Channel</th>
+                <th>Counselor</th>
+                <th>Current Status</th>
+                <th>Direct Action / Move</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (lead of filteredLeads(); track lead.id) {
+                <tr>
+                  <td>
+                    <div class="candidate-info">
+                      <a [routerLink]="['/leads', lead.id]" class="lead-name">{{ lead.fullName }}</a>
+                      <span class="country-badge">{{ lead.countryCode }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="program-info">
+                      <span class="meta-tag">🎓 {{ catalogs.nameOf('courses', lead.courseId) }}</span>
+                      <span class="meta-tag channel">📢 {{ catalogs.nameOf('channels', lead.channelId) }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="counselor-tag">👤 {{ lead.assignedToName }}</span>
+                  </td>
+                  <td>
+                    <span class="status-pill" [class]="'pill--' + lead.status.toLowerCase()">
+                      {{ statusLabels[lead.status] }}
+                    </span>
+                  </td>
+                  <td>
+                    <select
+                      [ngModel]="lead.status"
+                      (ngModelChange)="onStatusChange(lead, $event)"
+                      class="direct-select"
+                    >
+                      @for (c of columns; track c) {
+                        <option [value]="c">{{ statusLabels[c] }}</option>
+                      }
+                    </select>
+                  </td>
+                </tr>
+              }
+              @if (filteredLeads().length === 0) {
+                <tr>
+                  <td colspan="5" class="empty-row">
+                    No candidates found matching the selected filters.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </main>
+</div>

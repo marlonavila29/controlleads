@@ -79,72 +79,107 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('New lead')),
+      appBar: AppBar(title: const Text('Register New Candidate')),
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(ClTokens.space4),
+          padding: const EdgeInsets.symmetric(horizontal: ClTokens.space4, vertical: ClTokens.space5),
           children: [
             TextFormField(
               controller: _name,
-              decoration: const InputDecoration(labelText: 'Full name *'),
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+              decoration: const InputDecoration(
+                labelText: 'Full Candidate Name *',
+                hintText: 'e.g. Maria Silva',
+              ),
+              validator: (v) => (v == null || v.trim().isEmpty) ? 'Name is required' : null,
             ),
-            const SizedBox(height: ClTokens.space3),
+            const SizedBox(height: ClTokens.space4),
+
             TextFormField(
               controller: _country,
               maxLength: 2,
               textCapitalization: TextCapitalization.characters,
               decoration: const InputDecoration(
-                  labelText: 'Country code *', hintText: 'e.g. VN', counterText: ''),
+                labelText: 'Country Code (ISO 2-letter) *',
+                hintText: 'e.g. BR, MX, VN',
+                counterText: '',
+              ),
               validator: (v) =>
                   (v == null || !RegExp(r'^[A-Za-z]{2}$').hasMatch(v.trim()))
-                      ? 'Two-letter ISO code'
+                      ? 'Enter 2-letter ISO country code'
                       : null,
             ),
-            const SizedBox(height: ClTokens.space3),
+            const SizedBox(height: ClTokens.space4),
+
             TextFormField(
               controller: _email,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: 'Email'),
+              decoration: const InputDecoration(
+                labelText: 'Email Address',
+                hintText: 'candidate@example.com',
+              ),
             ),
-            const SizedBox(height: ClTokens.space3),
+            const SizedBox(height: ClTokens.space4),
+
             TextFormField(
               controller: _phone,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: 'Phone'),
+              decoration: const InputDecoration(
+                labelText: 'Phone / WhatsApp',
+                hintText: '+55 11 99999-9999',
+              ),
             ),
-            const SizedBox(height: ClTokens.space3),
+            const SizedBox(height: ClTokens.space4),
+
             DropdownButtonFormField<String>(
               initialValue: _courseId,
-              decoration: const InputDecoration(labelText: 'Course of interest *'),
+              decoration: const InputDecoration(labelText: 'Program of Interest *'),
               items: [
                 for (final c in _courses)
                   DropdownMenuItem(value: c.id, child: Text(c.name)),
               ],
               onChanged: (v) => setState(() => _courseId = v),
-              validator: (v) => v == null ? 'Required' : null,
+              validator: (v) => v == null ? 'Please select a course' : null,
             ),
-            const SizedBox(height: ClTokens.space3),
+            const SizedBox(height: ClTokens.space4),
+
             DropdownButtonFormField<String>(
               initialValue: _channelId,
-              decoration: const InputDecoration(labelText: 'Source channel *'),
+              decoration: const InputDecoration(labelText: 'Acquisition Source Channel *'),
               items: [
                 for (final c in _channels)
                   DropdownMenuItem(value: c.id, child: Text(c.name)),
               ],
               onChanged: (v) => setState(() => _channelId = v),
-              validator: (v) => v == null ? 'Required' : null,
+              validator: (v) => v == null ? 'Please select a channel' : null,
             ),
+
             if (_error != null) ...[
-              const SizedBox(height: ClTokens.space3),
-              Text(_error!,
-                  style: TextStyle(color: ClTokens.colorSemanticDanger)),
+              const SizedBox(height: ClTokens.space4),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: ClTokens.colorSemanticDanger.withAlpha(25),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: ClTokens.colorSemanticDanger.withAlpha(80)),
+                ),
+                child: Text(_error!, style: TextStyle(color: ClTokens.colorSemanticDanger, fontWeight: FontWeight.bold)),
+              ),
             ],
             const SizedBox(height: ClTokens.space5),
+
             FilledButton(
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               onPressed: _submitting ? null : _submit,
-              child: Text(_submitting ? 'Saving…' : 'Create lead'),
+              child: Text(
+                _submitting ? 'Registering Candidate...' : 'Create Candidate Lead',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),

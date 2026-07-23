@@ -18,7 +18,9 @@ import {
   StatusEvent
 } from '../../core/api/leads.service';
 import { StatusBadge } from '../../shared/status-badge';
-import { Topbar } from '../../shared/topbar';
+import { AddButton } from '../../shared/add-button';
+import { CustomSelect, SelectOption } from '../../shared/custom-select';
+import { Sidebar } from '../../shared/sidebar';
 
 /** One row of the unified timeline: a status change or an activity. */
 interface TimelineEntry {
@@ -29,7 +31,7 @@ interface TimelineEntry {
 
 @Component({
   selector: 'app-lead-detail',
-  imports: [DatePipe, FormsModule, RouterLink, StatusBadge, Topbar],
+  imports: [DatePipe, FormsModule, RouterLink, StatusBadge, Sidebar, AddButton, CustomSelect],
   templateUrl: './lead-detail.html',
   styleUrl: './lead-detail.scss'
 })
@@ -52,6 +54,13 @@ export class LeadDetail {
   protected readonly activityLabels = ACTIVITY_LABELS;
   protected readonly activityIcons = ACTIVITY_ICONS;
   protected newActivityType: ActivityType = 'NOTE';
+
+  protected readonly activityTypeOptions = computed<SelectOption[]>(() => {
+    return this.activityTypes.map((t) => ({
+      id: t,
+      name: `${this.activityIcons[t]} ${this.activityLabels[t]}`
+    }));
+  });
   protected newActivityContent = '';
   protected newActivityDue = '';
   protected readonly savingActivity = signal(false);
@@ -135,9 +144,23 @@ export class LeadDetail {
     this.activitiesService.complete(activity.id).subscribe(() => this.reload());
   }
 
+  protected readonly pendingTransition = signal<LeadStatus | null>(null);
+
   protected advance(): void {
     const to = this.nextStage();
-    if (to) this.transition(to);
+    if (to) this.pendingTransition.set(to);
+  }
+
+  protected confirmTransition(): void {
+    const to = this.pendingTransition();
+    if (to) {
+      this.transition(to);
+      this.pendingTransition.set(null);
+    }
+  }
+
+  protected cancelTransition(): void {
+    this.pendingTransition.set(null);
   }
 
   protected reactivate(): void {

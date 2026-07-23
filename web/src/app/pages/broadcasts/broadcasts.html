@@ -1,0 +1,298 @@
+<div class="app-layout">
+  <app-sidebar />
+
+  <main class="main-canvas">
+    <header class="canvas-header">
+      <div class="header-title">
+        <h1>Bulk Communications</h1>
+        <p class="subtitle">Broadcast templated messages to international candidates via Email & WhatsApp</p>
+      </div>
+    </header>
+
+    <div class="canvas-content">
+      @if (errorMessage) {
+        <div class="error-banner">⚠️ {{ errorMessage }}</div>
+      }
+      @if (successMessage) {
+        <div class="success-banner">✅ {{ successMessage }}</div>
+      }
+
+      <div class="broadcast-layout">
+        <!-- Composition Form -->
+        <div class="card composer-card">
+          <div class="card-header">
+            <h2>Compose Message</h2>
+          </div>
+
+          <form (submit)="send(); $event.preventDefault()" class="composer-form">
+            <!-- Channel Selector -->
+            <div class="form-group">
+              <label>Select Channel</label>
+              <div class="channel-tabs">
+                <button
+                  type="button"
+                  class="channel-btn"
+                  [class.active]="channel === 'EMAIL'"
+                  (click)="channel = 'EMAIL'"
+                >
+                  📧 Email Channel
+                </button>
+                <button
+                  type="button"
+                  class="channel-btn"
+                  [class.active]="channel === 'WHATSAPP'"
+                  (click)="channel = 'WHATSAPP'"
+                >
+                  💬 WhatsApp (Simulated API)
+                </button>
+              </div>
+            </div>
+
+            <!-- Target Selection -->
+            <div class="form-group">
+              <label>Recipients Target</label>
+              <div class="target-pills">
+                <button
+                  type="button"
+                  class="target-pill"
+                  [class.active]="targetType === 'all'"
+                  (click)="targetType = 'all'"
+                >
+                  👥 All Candidates ({{ leads().length }})
+                </button>
+                <button
+                  type="button"
+                  class="target-pill"
+                  [class.active]="targetType === 'status'"
+                  (click)="targetType = 'status'"
+                >
+                  📊 By Recruitment Status
+                </button>
+                <button
+                  type="button"
+                  class="target-pill"
+                  [class.active]="targetType === 'individual'"
+                  (click)="targetType = 'individual'"
+                >
+                  👤 Select Individuals
+                </button>
+              </div>
+            </div>
+
+            <!-- Conditional Status Selector -->
+            @if (targetType === 'status') {
+              <div class="form-group slide-in">
+                <label>Recruitment Stage Status</label>
+                <app-custom-select
+                  [options]="statusOptions"
+                  [(ngModel)]="selectedStatus"
+                  name="selectedStatus"
+                />
+                <span class="helper-text">
+                  Targeting {{ resolvedRecipients().length }} candidate(s) currently in the "{{ statusLabels[selectedStatus] }}" stage.
+                </span>
+              </div>
+            }
+
+            <!-- Email Subject -->
+            @if (channel === 'EMAIL') {
+              <div class="form-group slide-in">
+                <label for="subject">Email Subject</label>
+                <input
+                  type="text"
+                  id="subject"
+                  [(ngModel)]="subject"
+                  name="subject"
+                  placeholder="e.g. Welcome to ControlLeads University!"
+                  required
+                />
+              </div>
+            }
+
+            <!-- Message Body -->
+            <div class="form-group">
+              <label for="body">Message Body</label>
+              <div class="editor-container">
+                <div class="placeholders-bar">
+                  <span>Variables:</span>
+                  <button type="button" class="btn-placeholder" (click)="body = body + ' {name}'">&#123;name&#125;</button>
+                  <button type="button" class="btn-placeholder" (click)="body = body + ' {course}'">&#123;course&#125;</button>
+                  <button type="button" class="btn-placeholder" (click)="body = body + ' {counselor}'">&#123;counselor&#125;</button>
+                </div>
+                <textarea
+                  id="body"
+                  rows="8"
+                  [(ngModel)]="body"
+                  name="body"
+                  placeholder="Type your templated message text here..."
+                  required
+                ></textarea>
+              </div>
+              <span class="helper-text">
+                Variables will be resolved dynamically per candidate (e.g. candidate name, course program name, counselor name).
+              </span>
+            </div>
+
+            <button
+              type="submit"
+              class="btn-primary btn-block btn-send"
+              [disabled]="sending || resolvedRecipients().length === 0"
+            >
+              @if (sending) {
+                ⌛ Queueing Messages...
+              } @else {
+                🚀 Send to {{ resolvedRecipients().length }} Recipient(s)
+              }
+            </button>
+          </form>
+        </div>
+
+        <!-- Right Side: Live Mock Preview & Individual Selection -->
+        <div class="preview-panel">
+          @if (targetType === 'individual') {
+            <div class="card selection-card">
+              <div class="card-header">
+                <h2>Select Recipients</h2>
+                <div class="actions">
+                  <button type="button" class="btn-text" (click)="selectAllFiltered()">Select All</button>
+                  <button type="button" class="btn-text" (click)="deselectAll()">Clear</button>
+                </div>
+              </div>
+              
+              <div class="search-bar">
+                <input
+                  type="text"
+                  placeholder="Filter candidates..."
+                  [(ngModel)]="searchQuery"
+                  name="searchQuery"
+                />
+              </div>
+
+              <div class="checkbox-list">
+                @for (lead of filteredLeads(); track lead.id) {
+                  <label class="checkbox-item">
+                    <input
+                      type="checkbox"
+                      [checked]="selectedLeadIds()[lead.id]"
+                      (change)="toggleLeadSelection(lead.id)"
+                    />
+                    <div class="item-details">
+                      <span class="lead-name">{{ lead.fullName }}</span>
+                      <span class="lead-address">
+                        {{ channel === 'EMAIL' ? (lead.email || '⚠️ No email') : (lead.phone || '⚠️ No phone') }}
+                      </span>
+                    </div>
+                  </label>
+                } @empty {
+                  <span class="empty-selection">No candidates found.</span>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Live Mock Preview -->
+          <div class="card preview-card">
+            <div class="card-header">
+              <h2>Recipient Mockup Preview</h2>
+            </div>
+            
+            <div class="preview-container">
+              @if (resolvedRecipients().length > 0) {
+                <div class="preview-target-details">
+                  <span>Previewing for: <strong>{{ resolvedRecipients()[0].fullName }}</strong></span>
+                </div>
+              }
+
+              @if (channel === 'EMAIL') {
+                <!-- Email Mockup Template -->
+                <div class="email-mockup">
+                  <div class="email-header">
+                    <div><strong>From:</strong> Admissions Team &lt;admissions&#64;controlleads.com&gt;</div>
+                    <div><strong>To:</strong> {{ resolvedRecipients().length > 0 ? resolvedRecipients()[0].email || 'no-email@candidate.com' : 'candidate&#64;email.com' }}</div>
+                    <div><strong>Subject:</strong> {{ subject || '(No subject entered)' }}</div>
+                  </div>
+                  <div class="email-body">
+                    {{ previewText() }}
+                  </div>
+                </div>
+              } @else {
+                <!-- WhatsApp Mockup Chat Template -->
+                <div class="whatsapp-mockup">
+                  <div class="whatsapp-header">
+                    <span class="wa-avatar">💬</span>
+                    <div class="wa-info">
+                      <span class="wa-name">Admissions Team</span>
+                      <span class="wa-status">online</span>
+                    </div>
+                  </div>
+                  <div class="whatsapp-chat">
+                    <div class="wa-bubble-received">
+                      <div class="wa-text">{{ previewText() }}</div>
+                      <span class="wa-time">19:51</span>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- History log -->
+      <div class="card logs-card">
+        <div class="card-header">
+          <h2>Sent Communications History Log</h2>
+          <button type="button" class="btn-ghost" (click)="reloadLogs()">🔄 Refresh</button>
+        </div>
+
+        <div class="table-container">
+          <table class="logs-table">
+            <thead>
+              <tr>
+                <th>Date & Time</th>
+                <th>Candidate</th>
+                <th>Channel</th>
+                <th>Address</th>
+                <th>Sent By</th>
+                <th>Subject & Content Preview</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (log of logs(); track log.id) {
+                <tr>
+                  <td class="log-date">{{ log.createdAt | date:'short' }}</td>
+                  <td>
+                    <a [routerLink]="['/leads', log.leadId]" class="lead-link">{{ log.leadName }}</a>
+                  </td>
+                  <td>
+                    <span class="channel-tag" [class]="log.channel.toLowerCase()">
+                      {{ log.channel }}
+                    </span>
+                  </td>
+                  <td class="address-col">{{ log.recipientAddress }}</td>
+                  <td>👤 {{ log.sentByName }}</td>
+                  <td class="content-col">
+                    @if (log.subject) {
+                      <strong>{{ log.subject }}</strong> — 
+                    }
+                    {{ log.body }}
+                  </td>
+                  <td>
+                    <span class="status-badge" [class]="log.status.toLowerCase()">
+                      {{ log.status }}
+                    </span>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="7" class="empty-row">No message broadcast history found.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

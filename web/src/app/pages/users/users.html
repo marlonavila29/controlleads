@@ -1,78 +1,93 @@
-<header class="topbar">
-  <a routerLink="/" class="brand">ControlLeads</a>
-  <span class="crumb">Team</span>
-</header>
+<div class="app-layout">
+  <app-sidebar />
 
-<main class="content">
-  <h1>Team members</h1>
+  <main class="main-canvas">
+    <header class="canvas-header">
+      <div class="header-title">
+        <h1>Team Members</h1>
+        <p class="subtitle">Manage counselor accounts, roles, and lead assignments</p>
+      </div>
+    </header>
 
-  <form class="card create" [formGroup]="form" (ngSubmit)="create()">
-    <input formControlName="name" placeholder="Full name" />
-    <input formControlName="email" type="email" placeholder="Email" />
-    <input formControlName="password" type="password" placeholder="Initial password (min. 8)" />
-    <select formControlName="role">
-      <option value="MARKETING_TEAM">Marketing team</option>
-      <option value="ADMINISTRATOR">Administrator</option>
-    </select>
-    <button type="submit" [disabled]="creating()">{{ creating() ? 'Adding…' : 'Add member' }}</button>
-  </form>
-  @if (error(); as message) {
-    <p class="error">{{ message }}</p>
-  }
+    <div class="canvas-content">
+      <form class="card create-card" [formGroup]="form" (ngSubmit)="create()">
+        <h2 class="card-title">Add Team Member</h2>
+        <div class="form-grid">
+          <input formControlName="name" placeholder="Full Name" />
+          <input formControlName="email" type="email" placeholder="Email Address" />
+          <input formControlName="password" type="password" placeholder="Initial Password (min 8)" />
+          <app-custom-select formControlName="role" [options]="roleOptions" placeholder="Select Role..." />
+          <app-add-button [label]="creating() ? 'Adding…' : 'Add Member'" type="submit" [disabled]="creating()" />
+        </div>
+      </form>
 
-  <table class="card">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Role</th>
-        <th>Status</th>
-        <th>Leads</th>
-        <th>Since</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (member of members(); track member.id) {
-        <tr [class.inactive]="!member.active">
-          <td>{{ member.name }}</td>
-          <td>{{ member.email }}</td>
-          <td>{{ member.role === 'ADMINISTRATOR' ? 'Administrator' : 'Marketing team' }}</td>
-          <td>
-            <span class="chip" [class.chip--ok]="member.active" [class.chip--off]="!member.active">
-              {{ member.active ? 'Active' : 'Inactive' }}
-            </span>
-          </td>
-          <td>{{ member.leadCount }}</td>
-          <td>{{ member.createdAt | date: 'mediumDate' }}</td>
-          <td class="actions">
-            @if (member.leadCount > 0) {
-              <button type="button" class="link" (click)="startReassign(member)">Reassign</button>
-            }
-            <button type="button" class="link" (click)="toggleActive(member)">
-              {{ member.active ? 'Deactivate' : 'Reactivate' }}
-            </button>
-          </td>
-        </tr>
-        @if (reassigningId() === member.id) {
-          <tr class="reassign-row">
-            <td colspan="7">
-              Move {{ member.leadCount }} lead{{ member.leadCount > 1 ? 's' : '' }} from
-              <strong>{{ member.name }}</strong> to
-              <select [(ngModel)]="reassignTargetId">
-                <option value="" disabled>Select a team member…</option>
-                @for (other of otherActiveMembers(member.id); track other.id) {
-                  <option [value]="other.id">{{ other.name }}</option>
-                }
-              </select>
-              <button type="button" class="primary-sm" [disabled]="!reassignTargetId" (click)="confirmReassign(member)">
-                Reassign
-              </button>
-              <button type="button" class="link" (click)="reassigningId.set(null)">Cancel</button>
-            </td>
-          </tr>
-        }
+      @if (error(); as message) {
+        <div class="error-banner">⚠️ {{ message }}</div>
       }
-    </tbody>
-  </table>
-</main>
+
+      <div class="table-card card">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Leads Assigned</th>
+              <th>Joined Date</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (member of members(); track member.id) {
+              <tr [class.inactive]="!member.active">
+                <td class="name-cell">
+                  <strong class="user-name">{{ member.name }}</strong>
+                </td>
+                <td>{{ member.email }}</td>
+                <td>
+                  <span class="role-chip" [class.admin]="member.role === 'ADMINISTRATOR'">
+                    {{ member.role === 'ADMINISTRATOR' ? 'Administrator' : 'Marketing Team' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="status-chip" [class.chip--ok]="member.active" [class.chip--off]="!member.active">
+                    {{ member.active ? '● Active' : '○ Inactive' }}
+                  </span>
+                </td>
+                <td><strong class="lead-count">{{ member.leadCount }}</strong></td>
+                <td>{{ member.createdAt | date: 'mediumDate' }}</td>
+                <td class="text-right">
+                  @if (member.leadCount > 0) {
+                    <button type="button" class="btn-ghost" (click)="startReassign(member)">Reassign Leads</button>
+                  }
+                  <button type="button" class="btn-ghost danger-link" (click)="toggleActive(member)">
+                    {{ member.active ? 'Deactivate' : 'Reactivate' }}
+                  </button>
+                </td>
+              </tr>
+              @if (reassigningId() === member.id) {
+                <tr class="reassign-row">
+                  <td colspan="7">
+                    <div class="reassign-box">
+                      <span>Reassign <strong>{{ member.leadCount }}</strong> lead(s) from <strong>{{ member.name }}</strong> to:</span>
+                      <app-custom-select
+                        [(ngModel)]="reassignTargetId"
+                        [options]="otherActiveMembers(member.id)"
+                        placeholder="Select target team member…"
+                      />
+                      <button type="button" class="btn-primary" [disabled]="!reassignTargetId" (click)="confirmReassign(member)">
+                        Confirm Reassign
+                      </button>
+                      <button type="button" class="btn-ghost" (click)="reassigningId.set(null)">Cancel</button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>

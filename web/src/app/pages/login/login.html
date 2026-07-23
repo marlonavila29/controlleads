@@ -26,5 +26,27 @@
     <button type="submit" [disabled]="submitting()">
       {{ submitting() ? 'Signing in…' : 'Sign in' }}
     </button>
+
+    <div class="quick-login">
+      <div class="quick-divider">
+        <span>or quick sign-in as</span>
+      </div>
+      <div class="profile-buttons">
+        <button type="button" class="profile-btn admin-btn" (click)="quickLogin('admin@controlleads.local', 'admin123')" [disabled]="submitting()">
+          <span class="profile-icon">🛡️</span>
+          <span class="profile-details">
+            <strong class="profile-role">Administrator</strong>
+            <small class="profile-email">admin@controlleads.local</small>
+          </span>
+        </button>
+        <button type="button" class="profile-btn member-btn" (click)="quickLogin('member@controlleads.local', 'member123')" [disabled]="submitting()">
+          <span class="profile-icon">👤</span>
+          <span class="profile-details">
+            <strong class="profile-role">Marketing Team</strong>
+            <small class="profile-email">member@controlleads.local</small>
+          </span>
+        </button>
+      </div>
+    </div>
   </form>
 </div>

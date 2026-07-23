@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'auth/auth_service.dart';
 import 'auth/login_screen.dart';
-import 'leads/leads_screen.dart';
+import 'home/main_shell_screen.dart';
 import 'theme/app_theme.dart';
+import 'theme/theme_service.dart';
 
 void main() {
   runApp(const ControlLeadsApp());
@@ -14,16 +15,23 @@ class ControlLeadsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'ControlLeads',
-      debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(),
-      home: ListenableBuilder(
-        listenable: AuthService.instance,
-        builder: (context, _) => AuthService.instance.isAuthenticated
-            ? const LeadsScreen()
-            : const LoginScreen(),
-      ),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeService.instance.themeMode,
+      builder: (context, mode, _) {
+        return MaterialApp(
+          title: 'ControlLeads',
+          debugShowCheckedModeBanner: false,
+          theme: buildLightTheme(),
+          darkTheme: buildDarkTheme(),
+          themeMode: mode,
+          home: ListenableBuilder(
+            listenable: AuthService.instance,
+            builder: (context, _) => AuthService.instance.isAuthenticated
+                ? const MainShellScreen()
+                : const LoginScreen(),
+          ),
+        );
+      },
     );
   }
 }

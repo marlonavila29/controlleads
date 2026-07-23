@@ -49,9 +49,9 @@ public class AnalyticsService {
 
     // ---- summary -------------------------------------------------------------
 
-    public Summary summary(CurrentUser caller, LocalDate from, LocalDate to) {
-        String scope = scope(caller);
-        MapSqlParameterSource params = base(caller);
+    public Summary summary(CurrentUser caller, UUID assignedTo, LocalDate from, LocalDate to) {
+        String scope = scope(caller, assignedTo);
+        MapSqlParameterSource params = base(caller, assignedTo);
         OffsetDateTime[] window = window(from, to, 30);
         params.addValue("from", window[0]);
         params.addValue("toExcl", window[1]);
@@ -85,8 +85,8 @@ public class AnalyticsService {
 
     // ---- funnel (event-derived, ever reached) --------------------------------
 
-    public List<FunnelStage> funnel(CurrentUser caller, LocalDate from, LocalDate to) {
-        MapSqlParameterSource params = base(caller);
+    public List<FunnelStage> funnel(CurrentUser caller, UUID assignedTo, LocalDate from, LocalDate to) {
+        MapSqlParameterSource params = base(caller, assignedTo);
         String cohort = cohort(from, to, params);
         Map<String, Long> counts = new LinkedHashMap<>();
         jdbc.query("""
@@ -94,7 +94,7 @@ public class AnalyticsService {
             FROM lead_status_events e
             JOIN leads l ON l.id = e.lead_id
             WHERE l.deleted_at IS NULL
-              AND e.to_status IN ('LEAD','HOT_LEAD','APPLICATION','STUDENT')""" + scope(caller) + cohort
+              AND e.to_status IN ('LEAD','HOT_LEAD','APPLICATION','STUDENT')""" + scope(caller, assignedTo) + cohort
             + " GROUP BY e.to_status", params,
             rs -> { counts.put(rs.getString("status"), rs.getLong("c")); });
 
@@ -105,19 +105,16 @@ public class AnalyticsService {
 
     // ---- drop-off ------------------------------------------------------------
 
-    public List<DropOffRow> dropOff(CurrentUser caller, LocalDate from, LocalDate to) {
-        MapSqlParameterSource params = base(caller);
+    public List<DropOffRow> dropOff(CurrentUser caller, UUID assignedTo, LocalDate from, LocalDate to) {
+        MapSqlParameterSource params = base(caller, assignedTo);
         String cohort = cohort(from, to, params);
-        // count(DISTINCT lead_id) so a lead that stalled, was revived, then
-        // stalled again at the same stage/reason still counts once — consistent
-        // with every other distinct-lead metric in this service.
         return jdbc.query("""
             SELECT e.from_status AS stage, e.stall_reason_id AS reason_id,
                    sr.name AS reason_name, count(DISTINCT e.lead_id) AS c
             FROM lead_status_events e
             JOIN leads l ON l.id = e.lead_id
             LEFT JOIN stall_reasons sr ON sr.id = e.stall_reason_id
-            WHERE l.deleted_at IS NULL AND e.to_status = 'STALLED'""" + scope(caller) + cohort
+            WHERE l.deleted_at IS NULL AND e.to_status = 'STALLED'""" + scope(caller, assignedTo) + cohort
             + " GROUP BY e.from_status, e.stall_reason_id, sr.name ORDER BY c DESC",
             params,
             (rs, i) -> new DropOffRow(rs.getString("stage"),
@@ -128,20 +125,18 @@ public class AnalyticsService {
 
     // ---- timeseries ----------------------------------------------------------
 
-    public List<TimePoint> timeseries(CurrentUser caller, String interval, LocalDate from, LocalDate to) {
+    public List<TimePoint> timeseries(CurrentUser caller, UUID assignedTo, String interval, LocalDate from, LocalDate to) {
         if (!VALID_INTERVALS.contains(interval)) {
             throw ApiException.badRequest("interval must be 'week' or 'month'");
         }
-        String scope = scope(caller);
+        String scope = scope(caller, assignedTo);
         OffsetDateTime[] window = window(from, to, "month".equals(interval) ? 365 : 84);
-        MapSqlParameterSource params = base(caller);
+        MapSqlParameterSource params = base(caller, assignedTo);
         params.addValue("interval", interval);
         params.addValue("from", window[0]);
         params.addValue("toExcl", window[1]);
 
         Map<String, long[]> byPeriod = new LinkedHashMap<>();
-        // Truncate in UTC so bucket boundaries line up with the UTC [from,toExcl)
-        // window regardless of the DB session timezone.
         jdbc.query("""
             SELECT date_trunc(:interval, l.created_at AT TIME ZONE 'UTC')::date AS period, count(*) AS c
             FROM leads l WHERE l.deleted_at IS NULL
@@ -171,12 +166,12 @@ public class AnalyticsService {
 
     // ---- breakdowns ----------------------------------------------------------
 
-    public List<BreakdownRow> breakdown(CurrentUser caller, String table, String column,
+    public List<BreakdownRow> breakdown(CurrentUser caller, UUID assignedTo, String table, String column,
                                         LocalDate from, LocalDate to) {
         if (!BREAKDOWN_COLUMNS.getOrDefault(table, "").equals(column)) {
             throw new IllegalArgumentException("Unsupported breakdown: " + table);
         }
-        MapSqlParameterSource params = base(caller);
+        MapSqlParameterSource params = base(caller, assignedTo);
         String cohort = cohort(from, to, params);
         String sql = ("""
             SELECT cat.id AS id, cat.name AS name,
@@ -186,15 +181,15 @@ public class AnalyticsService {
             JOIN %s cat ON cat.id = l.%s
             LEFT JOIN (SELECT DISTINCT lead_id FROM lead_status_events WHERE to_status = 'STUDENT') s
                    ON s.lead_id = l.id
-            WHERE l.deleted_at IS NULL""").formatted(table, column) + scope(caller) + cohort
+            WHERE l.deleted_at IS NULL""").formatted(table, column) + scope(caller, assignedTo) + cohort
             + " GROUP BY cat.id, cat.name ORDER BY total DESC";
         return jdbc.query(sql, params,
             (rs, i) -> new BreakdownRow(rs.getObject("id", UUID.class), rs.getString("name"),
                 rs.getLong("total"), rs.getLong("students")));
     }
 
-    public List<CountryRow> byCountry(CurrentUser caller, LocalDate from, LocalDate to) {
-        MapSqlParameterSource params = base(caller);
+    public List<CountryRow> byCountry(CurrentUser caller, UUID assignedTo, LocalDate from, LocalDate to) {
+        MapSqlParameterSource params = base(caller, assignedTo);
         String cohort = cohort(from, to, params);
         return jdbc.query("""
             SELECT l.country_code AS country_code,
@@ -203,7 +198,7 @@ public class AnalyticsService {
             FROM leads l
             LEFT JOIN (SELECT DISTINCT lead_id FROM lead_status_events WHERE to_status = 'STUDENT') s
                    ON s.lead_id = l.id
-            WHERE l.deleted_at IS NULL""" + scope(caller) + cohort
+            WHERE l.deleted_at IS NULL""" + scope(caller, assignedTo) + cohort
             + " GROUP BY l.country_code ORDER BY total DESC",
             params,
             (rs, i) -> new CountryRow(rs.getString("country_code"),
@@ -221,6 +216,7 @@ public class AnalyticsService {
             LEFT JOIN leads l ON l.assigned_to = u.id AND l.deleted_at IS NULL
             LEFT JOIN (SELECT DISTINCT lead_id FROM lead_status_events WHERE to_status = 'STUDENT') s
                    ON s.lead_id = l.id
+            WHERE u.role = 'MARKETING_TEAM' AND u.active = true
             GROUP BY u.id, u.name
             ORDER BY students DESC, total_leads DESC""",
             new MapSqlParameterSource(),
@@ -230,16 +226,24 @@ public class AnalyticsService {
 
     // ---- helpers -------------------------------------------------------------
 
-    /** Ownership filter fragment; leads must be aliased `l`. */
-    private String scope(CurrentUser caller) {
-        return caller.isAdmin() ? "" : " AND l.assigned_to = :userId";
+    private String scope(CurrentUser caller, UUID assignedTo) {
+        if (assignedTo != null) {
+            boolean allowed = caller.isAdmin() || settings.shareLeadsVisibility();
+            if (allowed) {
+                return " AND l.assigned_to = :assignedTo";
+            }
+        }
+        return (caller.isAdmin() || settings.shareLeadsVisibility()) ? "" : " AND l.assigned_to = :userId";
     }
 
-    private MapSqlParameterSource base(CurrentUser caller) {
-        return new MapSqlParameterSource("userId", caller.id());
+    private MapSqlParameterSource base(CurrentUser caller, UUID assignedTo) {
+        MapSqlParameterSource params = new MapSqlParameterSource("userId", caller.id());
+        if (assignedTo != null) {
+            params.addValue("assignedTo", assignedTo);
+        }
+        return params;
     }
 
-    /** Optional cohort filter on lead.created_at (leads alias must be `l`). */
     private String cohort(LocalDate from, LocalDate to, MapSqlParameterSource params) {
         StringBuilder sb = new StringBuilder();
         if (from != null) {
@@ -258,10 +262,6 @@ public class AnalyticsService {
         return value == null ? 0L : value;
     }
 
-    /**
-     * Resolve an optional [from,to] date filter into a half-open UTC instant
-     * window. Missing bounds fall back to (now - defaultLookbackDays, now).
-     */
     private OffsetDateTime[] window(LocalDate from, LocalDate to, int defaultLookbackDays) {
         OffsetDateTime end = to != null
             ? to.plusDays(1).atStartOfDay().atOffset(ZoneOffset.UTC)

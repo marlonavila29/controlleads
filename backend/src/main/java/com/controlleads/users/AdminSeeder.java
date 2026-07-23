@@ -35,10 +35,14 @@ public class AdminSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if (users.count() > 0) {
-            return;
+        if (!users.existsByEmailIgnoreCase(email)) {
+            users.save(new User("Administrator", email, passwordEncoder.encode(password), UserRole.ADMINISTRATOR));
+            log.warn("Seeded initial administrator '{}' — change this password after first login.", email);
         }
-        users.save(new User("Administrator", email, passwordEncoder.encode(password), UserRole.ADMINISTRATOR));
-        log.warn("Seeded initial administrator '{}' — change this password after first login.", email);
+        String memberEmail = "member@controlleads.local";
+        if (!users.existsByEmailIgnoreCase(memberEmail)) {
+            users.save(new User("Sarah Counselor", memberEmail, passwordEncoder.encode("member123"), UserRole.MARKETING_TEAM));
+            log.info("Seeded initial marketing team member '{}'.", memberEmail);
+        }
     }
 }

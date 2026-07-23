@@ -134,6 +134,34 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
     );
   }
 
+  Future<void> _confirmTransition(String to, {String? reasonId, String? note}) async {
+    if (_lead == null) return;
+    final fromLabel = statusLabels[_lead!.status] ?? _lead!.status;
+    final toLabel = statusLabels[to] ?? to;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('⚡ Confirm Status Change'),
+        content: Text('Are you sure you want to move candidate "${_lead!.fullName}" from $fromLabel to $toLabel?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Confirm Move'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      _transition(to, reasonId: reasonId, note: note);
+    }
+  }
+
   Future<void> _transition(String to, {String? reasonId, String? note}) async {
     try {
       await LeadsService.instance
@@ -252,7 +280,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                       FilledButton.icon(
                         icon: const Icon(Icons.arrow_forward),
                         label: Text('Advance to ${statusLabels[next]}'),
-                        onPressed: () => _transition(next),
+                        onPressed: () => _confirmTransition(next),
                       ),
                     if (lead.status == 'STALLED')
                       FilledButton.icon(

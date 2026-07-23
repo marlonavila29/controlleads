@@ -25,6 +25,11 @@ export class Login {
     password: ['', Validators.required]
   });
 
+  protected quickLogin(email: string, pass: string): void {
+    this.form.setValue({ email, password: pass });
+    this.submit();
+  }
+
   protected submit(): void {
     if (this.form.invalid || this.submitting()) {
       this.form.markAllAsTouched();
