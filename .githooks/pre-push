@@ -1,0 +1,36 @@
+#!/bin/sh
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+echo "Running pre-push checks for controlLeads..."
+
+# Backend checks
+if [ -d "$REPO_ROOT/backend" ]; then
+  if [ -f "$REPO_ROOT/backend/mvnw" ]; then
+    echo "Running backend tests..."
+    (cd "$REPO_ROOT/backend" && ./mvnw test -q)
+  elif [ -f "$REPO_ROOT/backend/pom.xml" ] && command -v mvn >/dev/null 2>&1; then
+    echo "Running backend tests..."
+    (cd "$REPO_ROOT/backend" && mvn test -q)
+  fi
+fi
+
+# Web checks
+if [ -d "$REPO_ROOT/web" ] && [ -f "$REPO_ROOT/web/package.json" ]; then
+  if command -v npm >/dev/null 2>&1 && [ -d "$REPO_ROOT/web/node_modules" ]; then
+    echo "Running web tests..."
+    (cd "$REPO_ROOT/web" && npm test -- --watch=false)
+  fi
+fi
+
+# App checks (Flutter)
+if [ -d "$REPO_ROOT/app" ] && [ -f "$REPO_ROOT/app/pubspec.yaml" ]; then
+  if command -v flutter >/dev/null 2>&1; then
+    echo "Running app analysis..."
+    (cd "$REPO_ROOT/app" && flutter analyze)
+  fi
+fi
+
+echo "Pre-push checks passed!"
