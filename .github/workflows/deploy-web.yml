@@ -16,7 +16,6 @@ concurrency:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     name: Build and Push Web
     permissions:
       contents: read
